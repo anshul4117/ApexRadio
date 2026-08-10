@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   BarChart3,
@@ -13,6 +14,8 @@ import {
   Flag,
   Flame,
   CheckCircle2,
+  ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -31,6 +34,8 @@ import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
 import { useRadio } from '../context/RadioContext';
 import { useLap } from '../context/LapContext';
+import { useAlerts } from '../context/AlertsContext';
+import { useDemo } from '../context/DemoContext';
 
 const formatSec = (sec) => {
   if (!sec || isNaN(sec)) return '';
@@ -42,6 +47,8 @@ const formatSec = (sec) => {
 export const DashboardPage = () => {
   const { currentAnalysis, history } = useRadio();
   const { lapStats, correlation, refreshSession } = useLap();
+  const { activeAlertsCount } = useAlerts();
+  const { isDemoMode } = useDemo();
   const [isAcked, setIsAcked] = useState(false);
 
   const emotion = currentAnalysis?.emotion || {
@@ -54,11 +61,14 @@ export const DashboardPage = () => {
   const isElevated = emotion.driverState === 'Stressed' || (emotion.stressScore || 0) >= 75;
   const isFatigued = emotion.driverState === 'Fatigued';
 
-  const riskScore = correlation?.riskScore || (isElevated ? 64 : isFatigued ? 48 : 22);
+  const riskScore = correlation?.riskScore || (isElevated ? 61 : isFatigued ? 48 : 22);
   const riskTier = correlation?.riskTier || (isElevated ? 'High' : 'Nominal');
   const estimatedHR = isElevated ? 168 : isFatigued ? 152 : 135;
   const chartData = lapStats?.chartData || [];
   const explainability = correlation?.explainabilityFactors || [];
+
+  // Session Health status
+  const sessionHealth = isElevated ? 'Degraded (High Stress)' : 'Nominal (Pace Stable)';
 
   const CustomChartTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -87,11 +97,20 @@ export const DashboardPage = () => {
   return (
     <div className="space-y-6">
       
-      {/* Section Header */}
+      {/* Section Header with Active Alert Counter & Demo Indicator */}
       <SectionHeader
         title="Pit Wall Control Center"
         subtitle="Real-time driver acoustic stress monitoring, vehicle telemetry & tactical pit decisions"
-        badge={<StatusBadge status="live">Session Active</StatusBadge>}
+        badge={
+          <div className="flex items-center gap-2">
+            <StatusBadge status="live">Session Active</StatusBadge>
+            <Link to="/dashboard/alerts">
+              <Badge variant={activeAlertsCount > 0 ? 'danger' : 'neutral'} size="sm">
+                {activeAlertsCount} Active Alert{activeAlertsCount !== 1 ? 's' : ''}
+              </Badge>
+            </Link>
+          </div>
+        }
         actions={
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={refreshSession} className="gap-1.5">
@@ -164,22 +183,22 @@ export const DashboardPage = () => {
               <span className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white font-tabular">
                 {riskScore}<span className="text-sm font-normal text-zinc-400">%</span>
               </span>
-              <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
-                {riskTier} Performance Risk
+              <span className={`text-xs font-medium flex items-center gap-0.5 ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500'}`}>
+                <TrendingUp className="w-3 h-3" /> Rising (+39% stint drift)
               </span>
             </div>
 
             <div className="space-y-1.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-zinc-500">Pace Degradation:</span>
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-tabular">
-                  {lapStats?.paceDeltaVsAvg || '+0.84s / lap'}
+                <span className="text-zinc-500">Session Health:</span>
+                <span className={`font-medium ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                  {sessionHealth}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Trend Status:</span>
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium capitalize">
-                  {lapStats?.lapTrend || 'Worsening'}
+                <span className="text-zinc-500">Pace Degradation:</span>
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-tabular">
+                  {lapStats?.paceDeltaVsAvg || '+0.84s / lap'}
                 </span>
               </div>
             </div>
@@ -208,7 +227,7 @@ export const DashboardPage = () => {
             </div>
             <div className="flex justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800/60">
               <span className="text-zinc-500">Average Stint Pace:</span>
-              <span className="font-medium text-zinc-900 dark:text-zinc-100 font-tabular">
+              <span className="font-medium text-zinc-950 dark:text-white font-tabular">
                 {lapStats?.averageLapTime || '1:30.120'}
               </span>
             </div>
@@ -227,7 +246,7 @@ export const DashboardPage = () => {
         >
           <div className="space-y-2.5 text-xs">
             <div className="p-2.5 rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs leading-relaxed flex items-start gap-2 shadow-2xs">
-              <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-rose-400 dark:text-rose-600" />
               <span>{correlation?.recommendation?.action || currentAnalysis?.recommendation?.action || 'Enforce radio silence through Sector 2 high-G corners.'}</span>
             </div>
             
@@ -400,46 +419,46 @@ export const DashboardPage = () => {
           <Card
             title="Mini Activity Timeline"
             subtitle="Chronological feed of telemetry & radio events"
-            action={<Badge variant="outline" size="sm">Real-Time</Badge>}
+            action={
+              <Link to="/dashboard/timeline" className="text-xs font-medium text-zinc-900 dark:text-white underline underline-offset-4">
+                Full Timeline
+              </Link>
+            }
           >
             <div className="space-y-4 text-xs">
               <div className="relative pl-4 border-l border-zinc-200 dark:border-zinc-800 space-y-4">
                 
-                {/* Latest Analyzed Event from live state */}
-                {currentAnalysis && (
-                  <div className="relative animate-in fade-in duration-200">
-                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-950 border border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
-                      <div className={`w-1 h-1 rounded-full ${isElevated ? 'bg-rose-500' : 'bg-zinc-500'}`} />
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-950 dark:text-white">
-                          Radio: {emotion.driverState} ({emotion.stressScore}%)
-                        </span>
-                        <span className="text-[11px] text-zinc-400 font-tabular">
-                          {new Date(currentAnalysis.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="text-zinc-500 leading-relaxed text-xs truncate">
-                        "{currentAnalysis.transcript}"
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="relative">
+                {/* Latest Event from Timeline */}
+                <div className="relative animate-in fade-in duration-200">
                   <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-950 border border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
-                    <div className="w-1 h-1 rounded-full bg-zinc-500" />
+                    <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
                   </div>
                   <div className="space-y-0.5">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-zinc-950 dark:text-white">
-                        Lap 18 Completed
+                        AI Directive Issued (Sector 2)
                       </span>
-                      <span className="text-[11px] text-zinc-400 font-tabular">14:20:00</span>
+                      <span className="text-[11px] text-zinc-400 font-tabular">14:22:21</span>
                     </div>
                     <p className="text-zinc-500 leading-relaxed text-xs">
-                      Pace: 1:31.240 (+1.82s vs best stint lap)
+                      Radio silence enforced & Lap 21 pit window prepared.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-950 border border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
+                    <div className="w-1 h-1 rounded-full bg-rose-500" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-zinc-950 dark:text-white">
+                        Radio: Stressed (78%)
+                      </span>
+                      <span className="text-[11px] text-zinc-400 font-tabular">14:22:15</span>
+                    </div>
+                    <p className="text-zinc-500 leading-relaxed text-xs truncate">
+                      "Front left is completely gone guys..."
                     </p>
                   </div>
                 </div>
@@ -451,12 +470,12 @@ export const DashboardPage = () => {
                   <div className="space-y-0.5">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-zinc-950 dark:text-white">
-                        Telemetry Correlation
+                        Lap 18 Pace Degradation
                       </span>
-                      <span className="text-[11px] text-zinc-400 font-tabular">14:18:00</span>
+                      <span className="text-[11px] text-zinc-400 font-tabular">14:20:00</span>
                     </div>
                     <p className="text-zinc-500 leading-relaxed text-xs">
-                      Risk Score evaluated at {riskScore}% ({riskTier})
+                      Pace: 1:31.240 (+1.82s vs stint best).
                     </p>
                   </div>
                 </div>

@@ -9,14 +9,19 @@ import {
   User,
   X,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 import { useAuth } from '../../context/AuthContext';
+import { useAlerts } from '../../context/AlertsContext';
+import { useDemo } from '../../context/DemoContext';
 
 export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { activeAlertsCount } = useAlerts();
+  const { isDemoMode, toggleDemoMode } = useDemo();
 
   const navItems = [
     {
@@ -39,8 +44,8 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       name: 'AI Alerts',
       path: '/dashboard/alerts',
       icon: ShieldAlert,
-      badge: '3',
-      alertBadge: true,
+      badge: activeAlertsCount > 0 ? String(activeAlertsCount) : undefined,
+      alertBadge: activeAlertsCount > 0,
     },
     {
       name: 'Race Timeline',
@@ -152,8 +157,30 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
           );
         })}
 
+        {/* Demo Mode Toggle inside Sidebar */}
+        <div className="pt-4 px-3">
+          <div
+            onClick={toggleDemoMode}
+            className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between cursor-pointer hover:border-zinc-400 transition-colors"
+          >
+            <div className="flex items-center gap-2 text-xs">
+              <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+              <span className="font-medium text-zinc-900 dark:text-white">Demo Mode</span>
+            </div>
+            <span
+              className={`text-[11px] px-1.5 py-0.5 rounded font-semibold ${
+                isDemoMode
+                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+              }`}
+            >
+              {isDemoMode ? 'ON' : 'OFF'}
+            </span>
+          </div>
+        </div>
+
         {/* Driver Feed Switcher */}
-        <div className="pt-6 px-3">
+        <div className="pt-4 px-3">
           <div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mb-2">
             Active Telemetry Feed
           </div>
@@ -178,7 +205,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         </div>
       </div>
 
-      {/* Sidebar Operator Footer with Logout */}
+      {/* Sidebar Operator Footer */}
       <div className="px-4 py-3 border-t border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-500 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 flex-shrink-0" />

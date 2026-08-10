@@ -1,14 +1,18 @@
 import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { Menu, ChevronRight, Bell, LogOut } from 'lucide-react';
+import { Menu, ChevronRight, Bell, LogOut, Sparkles } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import StatusBadge from '../ui/StatusBadge';
 import { useAuth } from '../../context/AuthContext';
+import { useAlerts } from '../../context/AlertsContext';
+import { useDemo } from '../../context/DemoContext';
 
 export const TopHeader = ({ onMobileMenuToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { activeAlertsCount } = useAlerts();
+  const { isDemoMode, toggleDemoMode } = useDemo();
 
   const routeTitles = {
     '/dashboard': 'Overview',
@@ -62,11 +66,27 @@ export const TopHeader = ({ onMobileMenuToggle }) => {
           </div>
         </div>
 
-        {/* Right: Driver Info, Live Status, Theme Toggle, User Profile & Logout */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Right: Demo Mode Switch, Live Stream Badge, Theme, Alerts, User Profile & Logout */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
           
+          {/* Demo Mode Toggle Button for Judges & Mentors */}
+          <button
+            type="button"
+            onClick={toggleDemoMode}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+              isDemoMode
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent'
+                : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+            }`}
+            title="Toggle pre-loaded Silverstone GP race scenario"
+          >
+            <Sparkles className="w-3 h-3 text-rose-500" />
+            <span className="hidden sm:inline">Demo Mode:</span>
+            <span>{isDemoMode ? 'ON' : 'OFF'}</span>
+          </button>
+
           {/* Active Car & Pace Delta */}
-          <div className="hidden lg:flex items-center gap-2 text-xs border-r border-zinc-200 dark:border-zinc-800 pr-3 text-zinc-500">
+          <div className="hidden xl:flex items-center gap-2 text-xs border-r border-zinc-200 dark:border-zinc-800 pr-2.5 text-zinc-500">
             <span>Car #1 VER</span>
             <span className="text-zinc-900 dark:text-zinc-100 font-medium font-tabular">(P1 | +1.420s)</span>
           </div>
@@ -79,14 +99,18 @@ export const TopHeader = ({ onMobileMenuToggle }) => {
           {/* Theme Switcher */}
           <ThemeToggle />
 
-          {/* AI Strategy Alerts Icon */}
+          {/* AI Strategy Alerts Icon with Live Badge Counter */}
           <Link
             to="/dashboard/alerts"
             className="relative p-2 rounded-md border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-2xs"
-            title="AI Strategy Alerts"
+            title={`${activeAlertsCount} Active Pit Wall Alerts`}
           >
             <Bell className="w-3.5 h-3.5" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500" />
+            {activeAlertsCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[9px] font-bold">
+                {activeAlertsCount}
+              </span>
+            )}
           </Link>
 
           {/* Operator Profile Pill */}
