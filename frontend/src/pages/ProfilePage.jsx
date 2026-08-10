@@ -6,6 +6,11 @@ import {
   Sun,
   Monitor,
   Check,
+  Bell,
+  Sliders,
+  Flag,
+  Radio,
+  Volume2,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
@@ -13,14 +18,22 @@ import StatusBadge from '../components/ui/StatusBadge';
 import Button from '../components/ui/Button';
 import SectionHeader from '../components/ui/SectionHeader';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 export const ProfilePage = () => {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { user } = useAuth();
 
   const [stressThreshold, setStressThreshold] = useState(75);
   const [radioBrevity, setRadioBrevity] = useState(true);
   const [speedUnits, setSpeedUnits] = useState('kmh');
   const [tempUnits, setTempUnits] = useState('c');
+
+  // Notification toggles
+  const [audioBeeps, setAudioBeeps] = useState(true);
+  const [pitPopups, setPitPopups] = useState(true);
+  const [desktopNotifs, setDesktopNotifs] = useState(false);
+
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleSave = () => {
@@ -33,9 +46,9 @@ export const ProfilePage = () => {
       
       {/* Section Header */}
       <SectionHeader
-        title="Engineer & Team Settings"
-        subtitle="Operator credentials, acoustic sensitivity thresholds and display preferences"
-        badge={<Badge variant="neutral">Level 4 Operator</Badge>}
+        title="Engineer & Pit Wall Settings"
+        subtitle="Operator credentials, driver calibration thresholds, notification preferences and theme appearance"
+        badge={<Badge variant="neutral">{user?.role || 'Chief Race Engineer'}</Badge>}
         actions={
           <Button variant="primary" size="sm" className="gap-2" onClick={handleSave}>
             {savedSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
@@ -52,13 +65,13 @@ export const ProfilePage = () => {
           {/* Operator Identity Card */}
           <Card className="text-center">
             <div className="flex flex-col items-center p-2">
-              <div className="w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white mb-3 shadow-2xs">
-                <User className="w-7 h-7 text-zinc-500" />
+              <div className="w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white mb-3 shadow-2xs font-semibold text-sm">
+                {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'GP'}
               </div>
               <h3 className="text-base font-semibold text-zinc-950 dark:text-white">
-                GP Lambiase
+                {user?.name || 'GP Lambiase'}
               </h3>
-              <p className="text-xs text-zinc-500">Chief Race Engineer</p>
+              <p className="text-xs text-zinc-500">{user?.role || 'Chief Race Engineer'}</p>
               <div className="mt-2.5">
                 <StatusBadge status="live" size="sm">Console Online</StatusBadge>
               </div>
@@ -66,16 +79,16 @@ export const ProfilePage = () => {
 
             <div className="pt-4 mt-4 border-t border-zinc-100 dark:border-zinc-800/80 text-xs space-y-2 text-left text-zinc-500">
               <div className="flex justify-between">
-                <span>Assigned Driver:</span>
-                <span className="font-medium text-zinc-950 dark:text-white">Max Verstappen (#1)</span>
+                <span>Assigned Car:</span>
+                <span className="font-medium text-zinc-950 dark:text-white">{user?.driverAssigned || 'Max Verstappen (#1)'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Radio Call Sign:</span>
-                <span className="font-medium text-zinc-950 dark:text-white">APEX-ENG-01</span>
+                <span className="font-medium text-zinc-950 dark:text-white">{user?.callSign || 'APEX-ENG-01'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Channel Frequency:</span>
-                <span className="font-medium text-zinc-950 dark:text-white font-tabular">446.006 MHz</span>
+                <span>Official Email:</span>
+                <span className="font-medium text-zinc-950 dark:text-white truncate max-w-[150px]">{user?.email || 'gp.lambiase@apexracing.com'}</span>
               </div>
             </div>
           </Card>
@@ -89,7 +102,7 @@ export const ProfilePage = () => {
             <div className="space-y-2.5 text-zinc-500">
               <div className="flex justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
                 <span>Team:</span>
-                <span className="font-medium text-zinc-950 dark:text-white">Apex Racing Engineering</span>
+                <span className="font-medium text-zinc-950 dark:text-white">{user?.team || 'Apex Racing Engineering'}</span>
               </div>
               <div className="flex justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
                 <span>Base:</span>
@@ -108,7 +121,7 @@ export const ProfilePage = () => {
 
         </div>
 
-        {/* Right Column: Preferences & Theme Configuration */}
+        {/* Right Column (2 Cols): Preferences, Notifications & Theme */}
         <div className="lg:col-span-2 space-y-6">
           
           {/* Theme Preference Section */}
@@ -182,9 +195,9 @@ export const ProfilePage = () => {
             </div>
           </Card>
 
-          {/* Acoustic & Telemetry Sensitivity Settings */}
+          {/* Acoustic & Race Preferences */}
           <Card
-            title="Acoustic & Radio Brevity Thresholds"
+            title="Acoustic & Race Preferences"
             subtitle="Fine-tune machine learning stress sensitivity and automated suppression"
           >
             <div className="space-y-5 text-xs">
@@ -282,6 +295,68 @@ export const ProfilePage = () => {
                 </div>
               </div>
 
+            </div>
+          </Card>
+
+          {/* Notification Settings Card */}
+          <Card
+            title="Pit Wall Notification Settings"
+            subtitle="Alert audio beeps, strategy popups and broadcast channels"
+          >
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/40 dark:bg-zinc-900/20">
+                <div>
+                  <span className="font-medium text-zinc-950 dark:text-white block">Critical Audio Alert Beeps</span>
+                  <p className="text-zinc-500 text-[11px]">Play audible tone when driver stress exceeds 75%.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAudioBeeps(!audioBeeps)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    audioBeeps
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  {audioBeeps ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/40 dark:bg-zinc-900/20">
+                <div>
+                  <span className="font-medium text-zinc-950 dark:text-white block">Pit Window HUD Popups</span>
+                  <p className="text-zinc-500 text-[11px]">Display high-priority banner when undercut window opens.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPitPopups(!pitPopups)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    pitPopups
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  {pitPopups ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/40 dark:bg-zinc-900/20">
+                <div>
+                  <span className="font-medium text-zinc-950 dark:text-white block">Browser Desktop Notifications</span>
+                  <p className="text-zinc-500 text-[11px]">Push alerts to desktop even when console tab is in background.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDesktopNotifs(!desktopNotifs)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    desktopNotifs
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  {desktopNotifs ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
             </div>
           </Card>
 
