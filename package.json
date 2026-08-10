@@ -1,0 +1,23 @@
+{
+  "name": "apexradio-ai-monorepo",
+  "version": "1.0.0",
+  "description": "ApexRadio AI - Formula-style Pit Wall Radio & Telemetry Intelligence Platform",
+  "private": true,
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "start:backend": "npm --prefix backend start",
+    "build:frontend": "npm --prefix frontend run build",
+    "install:all": "npm --prefix backend install && npm --prefix frontend install"
+  },
+  "keywords": [
+    "f1",
+    "apexradio",
+    "telemetry",
+    "hackathon",
+    "react",
+    "express"
+  ],
+  "author": "ApexRadio AI Team",
+  "license": "MIT"
+}

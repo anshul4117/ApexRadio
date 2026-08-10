@@ -1,0 +1,102 @@
+[
+  {
+    "id": "radio-tx-001",
+    "timestamp": "2026-08-10T14:22:15.340Z",
+    "driverId": "VER-01",
+    "driverName": "Max Verstappen",
+    "team": "Apex Racing",
+    "lapNumber": 18,
+    "channel": "DRIVER_TO_PIT",
+    "rawAudioUrl": "/sample-audio/lap18-ver-radio1.wav",
+    "transcript": "Front left is completely gone guys, massive understeer in Turn 4, I cannot rotate the car.",
+    "stressIndicators": {
+      "pitchVariationHz": 42.5,
+      "speechCadenceWpm": 185,
+      "vocalTensionScore": 82,
+      "urgencyLevel": "HIGH",
+      "sentiment": "FRUSTRATED",
+      "stressScore": 78
+    },
+    "context": {
+      "trackSector": "SECTOR_2",
+      "currentDeltaToP2": "+1.420s",
+      "tireCompound": "MEDIUM",
+      "tireAgeLaps": 18
+    }
+  },
+  {
+    "id": "radio-tx-002",
+    "timestamp": "2026-08-10T14:22:21.100Z",
+    "driverId": "ENG-01",
+    "driverName": "Gianpiero Lambiase (Race Engineer)",
+    "team": "Apex Racing",
+    "lapNumber": 18,
+    "channel": "PIT_TO_DRIVER",
+    "rawAudioUrl": "/sample-audio/lap18-eng-radio1.wav",
+    "transcript": "Copy Max, we see the thermal degradation. Switch to STRAT 4 and adjust brake bias +1 forward.",
+    "stressIndicators": {
+      "pitchVariationHz": 12.0,
+      "speechCadenceWpm": 130,
+      "vocalTensionScore": 20,
+      "urgencyLevel": "MEDIUM",
+      "sentiment": "CALM",
+      "stressScore": 15
+    },
+    "context": {
+      "trackSector": "SECTOR_2",
+      "currentDeltaToP2": "+1.420s",
+      "tireCompound": "MEDIUM",
+      "tireAgeLaps": 18
+    }
+  },
+  {
+    "id": "radio-tx-003",
+    "timestamp": "2026-08-10T14:28:44.820Z",
+    "driverId": "HAM-44",
+    "driverName": "Lewis Hamilton",
+    "team": "Apex Mercedes",
+    "lapNumber": 22,
+    "channel": "DRIVER_TO_PIT",
+    "rawAudioUrl": "/sample-audio/lap22-ham-radio1.wav",
+    "transcript": "There is vibration under heavy braking into Turn 1. Check if the front wing is loose.",
+    "stressIndicators": {
+      "pitchVariationHz": 28.1,
+      "speechCadenceWpm": 150,
+      "vocalTensionScore": 64,
+      "urgencyLevel": "MEDIUM",
+      "sentiment": "CONCERNED",
+      "stressScore": 58
+    },
+    "context": {
+      "trackSector": "SECTOR_1",
+      "currentDeltaToP2": "-0.380s",
+      "tireCompound": "HARD",
+      "tireAgeLaps": 12
+    }
+  },
+  {
+    "id": "radio-tx-004",
+    "timestamp": "2026-08-10T14:41:02.550Z",
+    "driverId": "NOR-04",
+    "driverName": "Lando Norris",
+    "team": "Apex McLaren",
+    "lapNumber": 31,
+    "channel": "DRIVER_TO_PIT",
+    "rawAudioUrl": "/sample-audio/lap31-nor-radio1.wav",
+    "transcript": "Rain drops on visor at Turn 9! Rain is getting heavier!",
+    "stressIndicators": {
+      "pitchVariationHz": 68.4,
+      "speechCadenceWpm": 210,
+      "vocalTensionScore": 91,
+      "urgencyLevel": "CRITICAL",
+      "sentiment": "URGENT",
+      "stressScore": 88
+    },
+    "context": {
+      "trackSector": "SECTOR_3",
+      "currentDeltaToP2": "+3.150s",
+      "tireCompound": "SOFT",
+      "tireAgeLaps": 9
+    }
+  }
+]

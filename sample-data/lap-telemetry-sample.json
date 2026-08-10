@@ -1,0 +1,47 @@
+{
+  "session": {
+    "grandPrix": "Apex Grand Prix 2026",
+    "track": "Silverstone Circuit",
+    "totalLaps": 52,
+    "currentLap": 18
+  },
+  "driverTelemetry": [
+    {
+      "lap": 16,
+      "lapTimeSeconds": 89.420,
+      "sector1TimeSeconds": 28.110,
+      "sector2TimeSeconds": 34.210,
+      "sector3TimeSeconds": 27.100,
+      "topSpeedKmh": 328.4,
+      "avgThrottlePct": 76.5,
+      "tireDegradationPct": 14.2,
+      "driverStressAvg": 22.0,
+      "mistakeCount": 0
+    },
+    {
+      "lap": 17,
+      "lapTimeSeconds": 89.850,
+      "sector1TimeSeconds": 28.190,
+      "sector2TimeSeconds": 34.520,
+      "sector3TimeSeconds": 27.140,
+      "topSpeedKmh": 327.9,
+      "avgThrottlePct": 75.1,
+      "tireDegradationPct": 18.7,
+      "driverStressAvg": 38.5,
+      "mistakeCount": 0
+    },
+    {
+      "lap": 18,
+      "lapTimeSeconds": 91.240,
+      "sector1TimeSeconds": 28.320,
+      "sector2TimeSeconds": 35.610,
+      "sector3TimeSeconds": 27.310,
+      "topSpeedKmh": 326.1,
+      "avgThrottlePct": 71.8,
+      "tireDegradationPct": 26.4,
+      "driverStressAvg": 78.0,
+      "mistakeCount": 1,
+      "radioEvents": ["radio-tx-001", "radio-tx-002"]
+    }
+  ]
+}
