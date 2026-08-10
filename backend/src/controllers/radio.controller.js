@@ -1,3 +1,4 @@
+const fs = require('fs');
 const radioAnalysisService = require('../services/radioAnalysisService');
 const { sendSuccess, sendError } = require('../utils/response.util');
 
@@ -30,15 +31,23 @@ const uploadAudio = async (req, res, next) => {
  * Analyzes an audio file or sample preset through the STT + Emotion pipeline
  */
 const analyzeAudio = async (req, res, next) => {
+  const file = req.file || null;
   try {
-    const file = req.file || null;
     const body = req.body || {};
-
     const analysisResult = await radioAnalysisService.analyzeAudio(file, body);
 
     return sendSuccess(res, 200, analysisResult, 'Radio analysis completed');
   } catch (error) {
     next(error);
+  } finally {
+    // Guaranteed temporary file cleanup
+    if (file && file.path && fs.existsSync(file.path)) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch {
+        // ignore
+      }
+    }
   }
 };
 

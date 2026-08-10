@@ -1,47 +1,51 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from './components/layout/PublicLayout';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { PageSkeleton } from './components/ui/Skeleton';
 
-import LandingPage from './pages/LandingPage';
-import ArchitecturePage from './pages/ArchitecturePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+// Code-split pages for optimal performance and chunk loading
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const ArchitecturePage = lazy(() => import('./pages/ArchitecturePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 
-import DashboardPage from './pages/DashboardPage';
-import RadioAnalysisPage from './pages/RadioAnalysisPage';
-import LapPerformancePage from './pages/LapPerformancePage';
-import AiAlertsPage from './pages/AiAlertsPage';
-import RaceTimelinePage from './pages/RaceTimelinePage';
-import ProfilePage from './pages/ProfilePage';
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const RadioAnalysisPage = lazy(() => import('./pages/RadioAnalysisPage'));
+const LapPerformancePage = lazy(() => import('./pages/LapPerformancePage'));
+const AiAlertsPage = lazy(() => import('./pages/AiAlertsPage'));
+const RaceTimelinePage = lazy(() => import('./pages/RaceTimelinePage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 
 function App() {
   return (
-    <Routes>
-      {/* Public Pages Layout (Landing, Architecture, Login, Register) */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/architecture" element={<ArchitecturePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Route>
-
-      {/* Protected Pit Wall Product Shell Layout */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/radio" element={<RadioAnalysisPage />} />
-          <Route path="/dashboard/performance" element={<LapPerformancePage />} />
-          <Route path="/dashboard/alerts" element={<AiAlertsPage />} />
-          <Route path="/dashboard/timeline" element={<RaceTimelinePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+    <Suspense fallback={<div className="p-6 max-w-7xl mx-auto"><PageSkeleton /></div>}>
+      <Routes>
+        {/* Public Pages Layout (Landing, Architecture, Login, Register) */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/architecture" element={<ArchitecturePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Route>
-      </Route>
 
-      {/* Fallback Route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Protected Pit Wall Product Shell Layout */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/radio" element={<RadioAnalysisPage />} />
+            <Route path="/dashboard/performance" element={<LapPerformancePage />} />
+            <Route path="/dashboard/alerts" element={<AiAlertsPage />} />
+            <Route path="/dashboard/timeline" element={<RaceTimelinePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
+        </Route>
+
+        {/* Fallback Route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

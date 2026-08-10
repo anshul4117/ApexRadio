@@ -39,6 +39,7 @@ initDefaultSession();
  * POST /api/laps/upload
  */
 const uploadCsv = async (req, res, next) => {
+  const filePath = req.file?.path || null;
   try {
     if (!req.file) {
       return sendError(res, 400, 'CSV file required (.csv)', 'NO_FILE_UPLOADED');
@@ -60,16 +61,17 @@ const uploadCsv = async (req, res, next) => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Clean up temporary file
-    try {
-      fs.unlinkSync(req.file.path);
-    } catch {
-      // ignore
-    }
-
     return sendSuccess(res, 200, currentLapSession, 'CSV telemetry parsed and analyzed');
   } catch (error) {
     next(error);
+  } finally {
+    if (filePath && fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch {
+        // ignore
+      }
+    }
   }
 };
 
@@ -77,16 +79,12 @@ const uploadCsv = async (req, res, next) => {
  * POST /api/laps/analyze
  */
 const analyzeLaps = async (req, res, next) => {
+  const filePath = req.file?.path || null;
   try {
     let content = req.body.csvContent;
 
     if (!content && req.file) {
       content = fs.readFileSync(req.file.path, 'utf-8');
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch {
-        // ignore
-      }
     }
 
     if (!content) {
@@ -113,6 +111,14 @@ const analyzeLaps = async (req, res, next) => {
     return sendSuccess(res, 200, currentLapSession, 'Lap telemetry correlation completed');
   } catch (error) {
     next(error);
+  } finally {
+    if (filePath && fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch {
+        // ignore
+      }
+    }
   }
 };
 

@@ -3,6 +3,7 @@ const cors = require('cors');
 const envConfig = require('./config/env.config');
 const apiRoutes = require('./routes');
 const { requestLogger } = require('./middleware/logger.middleware');
+const rateLimiter = require('./middleware/rateLimit.middleware');
 const { notFoundHandler, errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -23,16 +24,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-// API Base Route
-app.use('/api', apiRoutes);
+// Mount rate limiter on API routes
+app.use('/api', rateLimiter, apiRoutes);
 
 // Root Welcome Route
 app.get('/', (req, res) => {
   res.json({
     service: 'ApexRadio AI Backend API',
     status: 'online',
-    docs: '/api/health',
+    health: '/api/health',
     version: '1.0.0',
+    huggingFaceIntegration: envConfig.hfApiKey ? 'API Key Configured' : 'Domain Acoustic Engine (Active)',
   });
 });
 
