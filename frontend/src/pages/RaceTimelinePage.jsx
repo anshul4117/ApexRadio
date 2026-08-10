@@ -7,6 +7,8 @@ import {
   Filter,
   CheckCircle,
   Clock,
+  FileSpreadsheet,
+  Gauge,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -14,12 +16,14 @@ import Badge from '../components/ui/Badge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
 import { useRadio } from '../context/RadioContext';
+import { useLap } from '../context/LapContext';
 
 export const RaceTimelinePage = () => {
   const { history } = useRadio();
+  const { lapStats, correlation, filename } = useLap();
   const [filterType, setFilterType] = useState('ALL');
 
-  // Map live analyzed radio history to timeline events
+  // Dynamic Radio Events
   const dynamicRadioEvents = (history || []).map((h) => {
     const isStressed = h.emotion?.driverState === 'Stressed' || (h.emotion?.stressScore || 0) >= 75;
     return {
@@ -36,19 +40,47 @@ export const RaceTimelinePage = () => {
     };
   });
 
-  const staticEvents = [
+  // Dynamic Telemetry & Correlation Events
+  const telemetryEvents = [
     {
-      id: 'evt-static-1',
-      lap: 18,
+      id: 'evt-telemetry-upload',
+      lap: lapStats?.totalLaps || 18,
+      time: correlation?.correlatedAt ? new Date(correlation.correlatedAt).toLocaleTimeString() : '14:22:25 UTC',
+      category: 'TELEMETRY',
+      typeLabel: 'Telemetry CSV Ingestion',
+      title: `Telemetry Dataset Parsed (${filename})`,
+      description: `Ingested ${lapStats?.totalLaps || 18} laps. Fastest Lap: ${lapStats?.fastestLap?.lapTime} (Lap ${lapStats?.fastestLap?.lap}), Average Pace: ${lapStats?.averageLapTime}.`,
+      badge: 'CSV Ingested',
+      status: 'nominal',
+      icon: FileSpreadsheet,
+    },
+    {
+      id: 'evt-risk-correlation',
+      lap: lapStats?.totalLaps || 18,
+      time: '14:22:22 UTC',
+      category: 'AI',
+      typeLabel: 'Performance Risk Correlation',
+      title: `Risk Score Evaluated: ${correlation?.riskScore || 61}% (${correlation?.riskTier || 'High'})`,
+      description: `Multi-factor engine correlated driver vocal stress with +${correlation?.paceLossSeconds || '0.84'}s lap degradation. ${correlation?.explainabilityFactors?.[0]?.description || ''}`,
+      badge: `${correlation?.riskTier || 'High'} Risk`,
+      status: correlation?.riskBadgeVariant || 'critical',
+      icon: Gauge,
+    },
+    {
+      id: 'evt-recommendation-directive',
+      lap: lapStats?.totalLaps || 18,
       time: '14:22:21 UTC',
       category: 'AI',
-      typeLabel: 'AI Recommendation',
-      title: 'Radio Silence Directive Issued',
-      description: 'AI recommended holding non-urgent engineer communications while Verstappen enters high-G braking in Turn 4–6.',
-      badge: 'Directive',
+      typeLabel: 'Tactical Pit Directive',
+      title: `AI Directive: ${correlation?.recommendation?.action || 'Enforce radio silence through Sector 2'}`,
+      description: `Recommended Category: ${correlation?.recommendation?.category || 'Pit Protocol'}. Target Pit Window: ${correlation?.recommendation?.pitWindow || 'Lap 21'}.`,
+      badge: 'Pit Directive',
       status: 'strategy',
       icon: Zap,
     },
+  ];
+
+  const staticEvents = [
     {
       id: 'evt-static-3',
       lap: 18,
@@ -63,7 +95,7 @@ export const RaceTimelinePage = () => {
     },
     {
       id: 'evt-static-5',
-      lap: 16,
+      lap: 14,
       time: '14:15:30 UTC',
       category: 'LAP',
       typeLabel: 'Fastest Lap',
@@ -99,13 +131,14 @@ export const RaceTimelinePage = () => {
     },
   ];
 
-  // Combined timeline (dynamic live events first, then static race markers)
-  const combinedEvents = [...dynamicRadioEvents, ...staticEvents];
+  // Combined timeline
+  const combinedEvents = [...telemetryEvents, ...dynamicRadioEvents, ...staticEvents];
 
   const filteredEvents = combinedEvents.filter((e) => {
     if (filterType === 'RADIO') return e.category === 'RADIO';
     if (filterType === 'EMOTION') return e.category === 'RADIO' && e.status === 'critical';
     if (filterType === 'LAP') return e.category === 'LAP';
+    if (filterType === 'TELEMETRY') return e.category === 'TELEMETRY';
     if (filterType === 'AI') return e.category === 'AI';
     return true;
   });
@@ -121,7 +154,7 @@ export const RaceTimelinePage = () => {
         actions={
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 border border-zinc-200/80 dark:border-zinc-800 rounded-md p-0.5 bg-zinc-50 dark:bg-zinc-900/60">
-              {['ALL', 'RADIO', 'EMOTION', 'LAP', 'AI'].map((cat) => (
+              {['ALL', 'RADIO', 'TELEMETRY', 'EMOTION', 'LAP', 'AI'].map((cat) => (
                 <button
                   key={cat}
                   type="button"
@@ -150,7 +183,7 @@ export const RaceTimelinePage = () => {
 
           return (
             <div key={evt.id} className="relative group">
-              {/* Timeline Dot with Subtle Indicator */}
+              {/* Timeline Dot */}
               <div className="absolute -left-[31px] sm:-left-[39px] top-3 w-3.5 h-3.5 rounded-full bg-white dark:bg-zinc-950 border-2 border-zinc-900 dark:border-white flex items-center justify-center shadow-2xs">
                 <div className={`w-1 h-1 rounded-full ${evt.status === 'critical' ? 'bg-rose-500' : 'bg-zinc-900 dark:bg-white'}`} />
               </div>

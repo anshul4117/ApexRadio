@@ -58,6 +58,16 @@ export const radioApi = {
   getHistory: () => api.get('/radio/history'),
 };
 
+export const lapsApi = {
+  uploadCsv: (formData, onProgress) =>
+    api.post('/laps/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: onProgress,
+    }),
+  analyzeLaps: (data) => api.post('/laps/analyze', data),
+  getSession: () => api.get('/laps/session'),
+};
+
 export const healthApi = {
   getHealth: () => api.get('/health'),
 };

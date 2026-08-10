@@ -11,10 +11,11 @@ const envConfig = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   uploadDir: path.join(__dirname, '../../uploads'),
   
-  // Hugging Face inference configurations
-  hfApiKey: process.env.HF_API_KEY || '',
+  // Hugging Face Inference API Configuration
+  hfApiKey: process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY || '',
   hfSttModel: process.env.HF_STT_MODEL || 'openai/whisper-large-v3',
   hfEmotionModel: process.env.HF_EMOTION_MODEL || 'j-hartmann/emotion-english-distilroberta-base',
+  hfRequestTimeoutMs: Number(process.env.HF_REQUEST_TIMEOUT_MS) || 30000,
 
   isProduction: process.env.NODE_ENV === 'production',
 };

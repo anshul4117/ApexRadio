@@ -1,7 +1,8 @@
-const path = require('path');
 const fs = require('fs');
+const envConfig = require('../config/env.config');
 const speechToTextService = require('./speechToTextService');
 const emotionDetectionService = require('./emotionDetectionService');
+const huggingFaceClient = require('./huggingFaceClient');
 const logger = require('../utils/logger.util');
 
 // In-memory analysis session history
@@ -21,6 +22,11 @@ const analysisHistory = [
       pitchJitter: '+42.5 Hz',
       speechCadence: '185 WPM',
       vocalIntensity: '88 dB',
+      modelScores: [
+        { label: 'anger', score: 0.782 },
+        { label: 'fear', score: 0.141 },
+        { label: 'neutral', score: 0.077 },
+      ],
     },
     confidence: 94.2,
     recommendation: {
@@ -33,6 +39,10 @@ const analysisHistory = [
       audioDuration: '4.2s',
       audioFormat: 'WAV',
       fileSizeKb: 148,
+      originalName: 'lap18_ver_understeer.wav',
+      sttModel: envConfig.hfSttModel,
+      emotionModel: envConfig.hfEmotionModel,
+      inferenceProvider: huggingFaceClient.hasApiKey() ? 'Hugging Face API' : 'Domain Acoustic Engine',
     },
     processingTime: '1.14s',
   },
@@ -40,8 +50,8 @@ const analysisHistory = [
 
 class RadioAnalysisService {
   /**
-   * Process and analyze an audio file
-   * @param {Object} file - Multer uploaded file object (or sample preset metadata)
+   * Process and analyze an audio file or sample preset through Hugging Face STT + Emotion Pipeline
+   * @param {Object} file - Multer uploaded file object (optional)
    * @param {Object} [params] - Additional parameters (driver, lap, sampleHint)
    * @returns {Promise<Object>}
    */
@@ -50,12 +60,12 @@ class RadioAnalysisService {
     const filePath = file?.path || null;
     const sampleHint = params.sampleHint || file?.originalname || '';
 
-    logger.info(`Starting AI Radio Analysis on: ${sampleHint || 'uploaded audio stream'}...`);
+    logger.info(`[RadioAnalysis] Executing pipeline for: ${sampleHint || file?.originalname || 'audio stream'}`);
 
-    // 1. Run Speech To Text
+    // 1. Run Hugging Face Speech To Text
     const sttResult = await speechToTextService.transcribeAudio(filePath, { sampleHint });
 
-    // 2. Run Emotion & Stress Detection
+    // 2. Run Hugging Face Emotion & Stress Detection
     const emotionResult = await emotionDetectionService.detectEmotion(sttResult.transcript, {
       durationSeconds: sttResult.durationSeconds,
     });
@@ -64,9 +74,10 @@ class RadioAnalysisService {
     const recommendation = this.generateAiRecommendation(emotionResult, params);
 
     // 4. Calculate Timing & Metadata
-    const processingDurationSeconds = Math.round((Date.now() - startTime) / 10) / 100;
-    const processingTimeStr = `${Math.max(0.85, processingDurationSeconds)}s`;
+    const elapsedSeconds = Math.round((Date.now() - startTime) / 10) / 100;
+    const processingTimeStr = `${Math.max(0.85, elapsedSeconds)}s`;
     const audioDurationStr = `${sttResult.durationSeconds || 4.2}s`;
+    const hasKey = huggingFaceClient.hasApiKey();
 
     const record = {
       id: `tx_${Date.now()}`,
@@ -83,6 +94,7 @@ class RadioAnalysisService {
         pitchJitter: emotionResult.pitchJitter,
         speechCadence: emotionResult.speechCadence,
         vocalIntensity: emotionResult.vocalIntensity,
+        modelScores: emotionResult.modelScores || [],
       },
       confidence: Math.round(((sttResult.confidence + emotionResult.confidence) / 2) * 10) / 10,
       recommendation,
@@ -91,7 +103,9 @@ class RadioAnalysisService {
         audioFormat: file?.mimetype?.includes('mp3') ? 'MP3' : 'WAV',
         fileSizeKb: file?.size ? Math.round(file.size / 1024) : 160,
         originalName: file?.originalname || 'radio_transmission.wav',
-        sttProvider: sttResult.provider || 'motorsport-stt-v1',
+        sttModel: envConfig.hfSttModel,
+        emotionModel: envConfig.hfEmotionModel,
+        inferenceProvider: hasKey ? 'Hugging Face Inference' : 'Motorsport Acoustic Engine',
       },
       processingTime: processingTimeStr,
     };

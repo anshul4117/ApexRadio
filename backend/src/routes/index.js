@@ -2,6 +2,7 @@ const express = require('express');
 const healthRoutes = require('./health.routes');
 const authRoutes = require('./auth.routes');
 const radioRoutes = require('./radio.routes');
+const lapsRoutes = require('./laps.routes');
 
 const apiRouter = express.Router();
 
@@ -9,5 +10,6 @@ const apiRouter = express.Router();
 apiRouter.use('/health', healthRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/radio', radioRoutes);
+apiRouter.use('/laps', lapsRoutes);
 
 module.exports = apiRouter;
