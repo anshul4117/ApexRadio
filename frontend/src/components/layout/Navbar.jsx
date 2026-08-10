@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Radio, ArrowRight } from 'lucide-react';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Radio, ArrowRight, LogOut } from 'lucide-react';
 import { healthApi } from '../../services/api';
 import StatusBadge from '../ui/StatusBadge';
 import ThemeToggle from '../ui/ThemeToggle';
 import Button from '../ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
 export const Navbar = () => {
   const [serverStatus, setServerStatus] = useState('checking'); // 'healthy' | 'offline' | 'checking'
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -25,6 +28,11 @@ export const Navbar = () => {
       isMounted = false;
     };
   }, [location.pathname]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md transition-colors">
@@ -99,18 +107,38 @@ export const Navbar = () => {
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
 
-            <Link
-              to="/login"
-              className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 rounded-md transition-colors"
-            >
-              Sign In
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <Link to="/dashboard">
+                  <Button variant="primary" size="sm" className="gap-1.5">
+                    Enter Console <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-md text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 rounded-md transition-colors"
+                >
+                  Sign In
+                </Link>
 
-            <Link to="/dashboard">
-              <Button variant="primary" size="sm" className="gap-1.5">
-                Launch Console <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
+                <Link to="/dashboard">
+                  <Button variant="primary" size="sm" className="gap-1.5">
+                    Launch Console <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
 
         </div>

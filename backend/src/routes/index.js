@@ -1,9 +1,11 @@
 const express = require('express');
 const healthRoutes = require('./health.routes');
+const authRoutes = require('./auth.routes');
 
 const apiRouter = express.Router();
 
 // Mount sub-routes
 apiRouter.use('/health', healthRoutes);
+apiRouter.use('/auth', authRoutes);
 
 module.exports = apiRouter;

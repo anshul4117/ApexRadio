@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Radio,
@@ -8,12 +8,15 @@ import {
   Clock,
   User,
   X,
-  SlidersHorizontal,
+  LogOut,
 } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
+import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const navItems = [
     {
@@ -52,10 +55,15 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   ];
 
   const drivers = [
-    { id: 'VER-01', name: 'Max Verstappen', num: '1', team: 'Apex Racing', active: true },
-    { id: 'HAM-44', name: 'Lewis Hamilton', num: '44', team: 'Mercedes', active: false },
-    { id: 'NOR-04', name: 'Lando Norris', num: '4', team: 'McLaren', active: false },
+    { id: 'VER-01', name: 'Max Verstappen', num: '1', active: true },
+    { id: 'HAM-44', name: 'Lewis Hamilton', num: '44', active: false },
+    { id: 'NOR-04', name: 'Lando Norris', num: '4', active: false },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 border-r border-zinc-200/80 dark:border-zinc-800/80">
@@ -80,7 +88,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
           <button
             type="button"
             onClick={() => setIsMobileOpen(false)}
-            className="md:hidden p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="md:hidden p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -170,20 +178,36 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         </div>
       </div>
 
-      {/* Sidebar Operator Footer */}
-      <div className="px-5 py-3 border-t border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-500 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-          <span>GP Lambiase</span>
+      {/* Sidebar Operator Footer with Logout */}
+      <div className="px-4 py-3 border-t border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-500 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 flex-shrink-0" />
+          <div className="truncate">
+            <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+              {user?.name || 'GP Lambiase'}
+            </div>
+            <div className="text-[10px] text-zinc-400 truncate">
+              {user?.callSign || 'APEX-ENG-01'}
+            </div>
+          </div>
         </div>
-        <span className="text-[11px] text-zinc-400">Channel 1</span>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+          title="Sign out"
+          aria-label="Sign out"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Desktop Sidebar (Fixed) */}
+      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 fixed inset-y-0 left-0 z-30 shadow-2xs">
         {sidebarContent}
       </aside>
