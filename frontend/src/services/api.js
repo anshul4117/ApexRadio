@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,6 +40,22 @@ export const authApi = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
   getMe: () => api.get('/auth/me'),
+};
+
+export const radioApi = {
+  uploadAudio: (formData, onProgress) =>
+    api.post('/radio/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: onProgress,
+    }),
+  analyzeAudio: (data, onProgress) => {
+    const isFormData = data instanceof FormData;
+    return api.post('/radio/analyze', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' },
+      onUploadProgress: onProgress,
+    });
+  },
+  getHistory: () => api.get('/radio/history'),
 };
 
 export const healthApi = {

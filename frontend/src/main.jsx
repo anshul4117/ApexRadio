@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { RadioProvider } from './context/RadioContext';
 import App from './App';
 import './index.css';
 
@@ -10,9 +11,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <RadioProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </RadioProvider>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>

@@ -13,13 +13,32 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
+import { useRadio } from '../context/RadioContext';
 
 export const RaceTimelinePage = () => {
+  const { history } = useRadio();
   const [filterType, setFilterType] = useState('ALL');
 
-  const events = [
+  // Map live analyzed radio history to timeline events
+  const dynamicRadioEvents = (history || []).map((h) => {
+    const isStressed = h.emotion?.driverState === 'Stressed' || (h.emotion?.stressScore || 0) >= 75;
+    return {
+      id: h.id,
+      lap: h.lap || 18,
+      time: new Date(h.timestamp).toLocaleTimeString(),
+      category: 'RADIO',
+      typeLabel: 'Live Radio Ingestion',
+      title: `${h.driver} Radio (${h.emotion?.driverState || 'Nominal'} · ${h.emotion?.stressScore || 50}%)`,
+      description: `Driver callout: "${h.transcript}" Pitch jitter recorded at ${h.emotion?.pitchJitter || '+12 Hz'} with ${h.confidence || 94.2}% STT confidence.`,
+      badge: isStressed ? 'Stress Spike' : 'Radio Callout',
+      status: isStressed ? 'critical' : 'nominal',
+      icon: Volume2,
+    };
+  });
+
+  const staticEvents = [
     {
-      id: 'evt-1',
+      id: 'evt-static-1',
       lap: 18,
       time: '14:22:21 UTC',
       category: 'AI',
@@ -31,19 +50,7 @@ export const RaceTimelinePage = () => {
       icon: Zap,
     },
     {
-      id: 'evt-2',
-      lap: 18,
-      time: '14:22:15 UTC',
-      category: 'RADIO',
-      typeLabel: 'Radio & Emotion Event',
-      title: 'Verstappen Radio Frustration (Stress 78%)',
-      description: 'Driver callout: "Front left is completely gone guys, massive understeer in Turn 4, I cannot rotate the car." Pitch jitter increased +42.5 Hz.',
-      badge: 'Stress Spike',
-      status: 'critical',
-      icon: Volume2,
-    },
-    {
-      id: 'evt-3',
+      id: 'evt-static-3',
       lap: 18,
       time: '14:20:00 UTC',
       category: 'LAP',
@@ -55,19 +62,7 @@ export const RaceTimelinePage = () => {
       icon: Flag,
     },
     {
-      id: 'evt-4',
-      lap: 16,
-      time: '14:18:40 UTC',
-      category: 'RADIO',
-      typeLabel: 'Radio Event',
-      title: 'Traffic Callout on Hangar Straight',
-      description: 'Verstappen reported backmarker weaving; lost 0.3s in Sector 2. Stress score evaluated at 62%.',
-      badge: 'Traffic Callout',
-      status: 'high-stress',
-      icon: Volume2,
-    },
-    {
-      id: 'evt-5',
+      id: 'evt-static-5',
       lap: 16,
       time: '14:15:30 UTC',
       category: 'LAP',
@@ -79,7 +74,7 @@ export const RaceTimelinePage = () => {
       icon: Flag,
     },
     {
-      id: 'evt-6',
+      id: 'evt-static-6',
       lap: 12,
       time: '14:10:00 UTC',
       category: 'AI',
@@ -91,7 +86,7 @@ export const RaceTimelinePage = () => {
       icon: Zap,
     },
     {
-      id: 'evt-7',
+      id: 'evt-static-7',
       lap: 1,
       time: '13:52:00 UTC',
       category: 'LAP',
@@ -104,7 +99,10 @@ export const RaceTimelinePage = () => {
     },
   ];
 
-  const filteredEvents = events.filter((e) => {
+  // Combined timeline (dynamic live events first, then static race markers)
+  const combinedEvents = [...dynamicRadioEvents, ...staticEvents];
+
+  const filteredEvents = combinedEvents.filter((e) => {
     if (filterType === 'RADIO') return e.category === 'RADIO';
     if (filterType === 'EMOTION') return e.category === 'RADIO' && e.status === 'critical';
     if (filterType === 'LAP') return e.category === 'LAP';
