@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Radio, Activity, User, LogIn, LayoutDashboard, ShieldCheck, Zap } from 'lucide-react';
+import { Radio, ArrowRight } from 'lucide-react';
 import { healthApi } from '../../services/api';
-import Badge from '../ui/Badge';
+import StatusBadge from '../ui/StatusBadge';
+import ThemeToggle from '../ui/ThemeToggle';
+import Button from '../ui/Button';
 
 export const Navbar = () => {
   const [serverStatus, setServerStatus] = useState('checking'); // 'healthy' | 'offline' | 'checking'
@@ -24,81 +26,93 @@ export const Navbar = () => {
     };
   }, [location.pathname]);
 
-  const navLinks = [
-    { name: 'Overview', path: '/' },
-    { name: 'Pit Wall Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Engineer Profile', path: '/profile', icon: User },
-  ];
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Brand Logo & Telemetry Indicator */}
-          <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-50 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md transition-colors">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
+          
+          {/* Brand Logo */}
+          <div className="flex items-center gap-5">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded bg-white text-black flex items-center justify-center font-mono font-bold text-base transition-transform group-hover:scale-105">
-                <Radio className="w-4 h-4 text-black stroke-[2.5]" />
+              <div className="w-7 h-7 rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-semibold text-xs shadow-xs transition-transform group-hover:scale-105">
+                <Radio className="w-3.5 h-3.5 stroke-[2.2]" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
-                  APEXRADIO <span className="text-xs font-mono font-normal text-zinc-400">AI</span>
+                <span className="text-sm font-semibold tracking-tight text-zinc-950 dark:text-white flex items-center gap-1.5">
+                  ApexRadio <span className="text-xs text-zinc-400 font-normal">AI</span>
                 </span>
-                <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Pit Wall Telemetry</span>
               </div>
             </Link>
 
-            {/* Server Status Badge */}
-            <div className="hidden md:flex items-center">
-              <Badge
-                variant={serverStatus === 'healthy' ? 'success' : serverStatus === 'checking' ? 'neutral' : 'danger'}
+            {/* Health status badge */}
+            <div className="hidden sm:flex items-center">
+              <StatusBadge
+                status={serverStatus === 'healthy' ? 'live' : serverStatus === 'checking' ? 'nominal' : 'critical'}
                 size="sm"
-                dot
               >
-                {serverStatus === 'healthy' ? 'API LIVE' : serverStatus === 'checking' ? 'PINGING' : 'API OFFLINE'}
-              </Badge>
+                {serverStatus === 'healthy' ? 'API Online' : serverStatus === 'checking' ? 'Connecting' : 'API Offline'}
+              </StatusBadge>
             </div>
           </div>
 
-          {/* Center Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  className={({ isActive }) =>
-                    `px-3 py-1.5 rounded-md text-xs font-medium font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                      isActive
-                        ? 'bg-zinc-800 text-white border border-zinc-700/80 shadow-sm'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
-                    }`
-                  }
-                >
-                  {Icon && <Icon className="w-3.5 h-3.5" />}
-                  {link.name}
-                </NavLink>
-              );
-            })}
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 text-xs">
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-md font-medium transition-colors ${
+                  isActive && location.pathname === '/'
+                    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
+                }`
+              }
+            >
+              Overview
+            </NavLink>
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-md font-medium transition-colors ${
+                  isActive
+                    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
+                }`
+              }
+            >
+              Pit Wall Console
+            </NavLink>
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-md font-medium transition-colors ${
+                  isActive
+                    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
+                }`
+              }
+            >
+              Settings
+            </NavLink>
           </nav>
 
-          {/* Right Action Links */}
-          <div className="flex items-center gap-3">
+          {/* Actions & Theme Toggle */}
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
+
             <Link
               to="/login"
-              className="text-xs font-mono text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-900/60 transition-colors"
+              className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 rounded-md transition-colors"
             >
-              LOG IN
+              Sign In
             </Link>
-            <Link
-              to="/register"
-              className="text-xs font-mono font-medium bg-white text-black hover:bg-zinc-200 px-3.5 py-1.5 rounded-md transition-colors flex items-center gap-1.5 shadow-sm"
-            >
-              <Zap className="w-3 h-3 text-black fill-current" />
-              LAUNCH
+
+            <Link to="/dashboard">
+              <Button variant="primary" size="sm" className="gap-1.5">
+                Launch Console <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
             </Link>
           </div>
+
         </div>
       </div>
     </header>

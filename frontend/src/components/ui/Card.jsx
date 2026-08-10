@@ -5,24 +5,50 @@ export const Card = ({
   className = '',
   title,
   subtitle,
+  badge,
   action,
+  footer,
+  noPadding = false,
   ...props
 }) => {
   return (
     <div
-      className={`rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-5 backdrop-blur-sm shadow-sm ${className}`}
+      className={`relative rounded-lg border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#111113] text-zinc-900 dark:text-zinc-100 shadow-xs transition-all duration-150 ${className}`}
       {...props}
     >
-      {(title || subtitle || action) && (
-        <div className="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-zinc-800/60">
-          <div>
-            {title && <h3 className="text-base font-semibold text-white tracking-tight">{title}</h3>}
-            {subtitle && <p className="text-xs text-zinc-400 mt-0.5">{subtitle}</p>}
+      {/* Optional Card Header */}
+      {(title || subtitle || badge || action) && (
+        <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-zinc-100 dark:border-zinc-800/60">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              {title && (
+                <h3 className="text-sm font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  {title}
+                </h3>
+              )}
+              {badge && <div>{badge}</div>}
+            </div>
+            {subtitle && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal leading-relaxed">
+                {subtitle}
+              </p>
+            )}
           </div>
-          {action && <div className="flex-shrink-0">{action}</div>}
+          {action && <div className="flex-shrink-0 flex items-center gap-2">{action}</div>}
         </div>
       )}
-      {children}
+
+      {/* Card Body */}
+      <div className={noPadding ? '' : 'p-6'}>
+        {children}
+      </div>
+
+      {/* Optional Card Footer */}
+      {footer && (
+        <div className="px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/60 dark:bg-zinc-900/30 rounded-b-lg text-xs text-zinc-500 dark:text-zinc-400">
+          {footer}
+        </div>
+      )}
     </div>
   );
 };

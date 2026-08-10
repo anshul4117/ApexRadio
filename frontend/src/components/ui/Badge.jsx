@@ -2,25 +2,24 @@ import React from 'react';
 
 export const Badge = ({
   children,
-  variant = 'neutral',
+  variant = 'neutral', // 'neutral' | 'outline' | 'white' | 'dark' | 'danger'
   size = 'md',
   dot = false,
   className = '',
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center font-mono rounded-full font-medium select-none';
+  const baseStyles = 'inline-flex items-center rounded-md font-normal select-none tracking-tight';
 
   const variants = {
-    neutral: 'bg-zinc-800/80 text-zinc-300 border border-zinc-700/60',
-    outline: 'border border-zinc-700 text-zinc-400 bg-transparent',
-    white: 'bg-white text-black font-semibold',
-    success: 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60',
-    warning: 'bg-amber-950/60 text-amber-300 border border-amber-800/60',
-    danger: 'bg-rose-950/60 text-rose-300 border border-rose-800/60',
+    neutral: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/60',
+    outline: 'border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 bg-transparent',
+    white: 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-medium shadow-xs',
+    dark: 'bg-zinc-950 text-white border border-zinc-800 font-medium',
+    danger: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-900/60',
   };
 
   const sizes = {
-    sm: 'text-[10px] px-2 py-0.5 gap-1',
+    sm: 'text-xs px-2 py-0.5 gap-1',
     md: 'text-xs px-2.5 py-0.5 gap-1.5',
     lg: 'text-sm px-3 py-1 gap-2',
   };
@@ -33,13 +32,7 @@ export const Badge = ({
       {dot && (
         <span
           className={`w-1.5 h-1.5 rounded-full ${
-            variant === 'success'
-              ? 'bg-emerald-400 animate-pulse'
-              : variant === 'warning'
-              ? 'bg-amber-400'
-              : variant === 'danger'
-              ? 'bg-rose-400'
-              : 'bg-zinc-400'
+            variant === 'danger' ? 'bg-rose-500' : 'bg-zinc-400 dark:bg-zinc-500'
           }`}
         />
       )}
