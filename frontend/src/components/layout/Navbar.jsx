@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Radio, ArrowRight, LogOut } from 'lucide-react';
+import { Radio, ArrowRight, LogOut, Cpu } from 'lucide-react';
 import { healthApi } from '../../services/api';
 import StatusBadge from '../ui/StatusBadge';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -8,10 +8,10 @@ import Button from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 
 export const Navbar = () => {
-  const [serverStatus, setServerStatus] = useState('checking'); // 'healthy' | 'offline' | 'checking'
+  const [serverStatus, setServerStatus] = useState('checking');
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -78,6 +78,18 @@ export const Navbar = () => {
               Overview
             </NavLink>
             <NavLink
+              to="/architecture"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-md font-medium transition-colors ${
+                  isActive
+                    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
+                }`
+              }
+            >
+              Architecture
+            </NavLink>
+            <NavLink
               to="/dashboard"
               className={({ isActive }) =>
                 `px-3 py-1.5 rounded-md font-medium transition-colors ${
@@ -88,18 +100,6 @@ export const Navbar = () => {
               }
             >
               Pit Wall Console
-            </NavLink>
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-md font-medium transition-colors ${
-                  isActive
-                    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
-                }`
-              }
-            >
-              Settings
             </NavLink>
           </nav>
 
