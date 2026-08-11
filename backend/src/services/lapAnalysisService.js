@@ -3,11 +3,12 @@ const logger = require('../utils/logger.util');
 
 /**
  * Convert "M:SS.mmm" or "SS.mmm" time string to seconds
- * @param {string} timeStr - e.g. "1:29.420" or "89.420"
+ * @param {string|number} timeStr - e.g. "1:29.420" or "89.420"
  * @returns {number}
  */
 const timeStrToSeconds = (timeStr) => {
-  if (!timeStr) return 0;
+  if (timeStr === null || timeStr === undefined || timeStr === '') return 0;
+  if (typeof timeStr === 'number') return timeStr;
   const str = String(timeStr).trim().replace('s', '');
   if (str.includes(':')) {
     const parts = str.split(':');
@@ -24,7 +25,7 @@ const timeStrToSeconds = (timeStr) => {
  * @returns {string} - e.g. "1:29.420"
  */
 const secondsToTimeStr = (seconds) => {
-  if (!seconds || isNaN(seconds)) return '0:00.000';
+  if (!seconds || isNaN(seconds) || seconds <= 0) return '0:00.000';
   const mins = Math.floor(seconds / 60);
   const secs = (seconds % 60).toFixed(3);
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -32,11 +33,18 @@ const secondsToTimeStr = (seconds) => {
 
 class LapAnalysisService {
   /**
-   * Parse CSV content into structured lap array
+   * Parse CSV content into structured lap array with strict validation
+   * Supports:
+   * 1. Simple 2-column: lap,lap_time (or lap,lapTime)
+   * 2. Full telemetry: lap,lapTime,s1,s2,s3,topSpeed,tireDeg,stressEvent
    * @param {string|Buffer} csvContent - CSV string or buffer
    * @returns {Array<Object>}
    */
   parseCsv(csvContent) {
+    if (!csvContent) {
+      throw new Error('CSV content cannot be empty.');
+    }
+
     const rawText = Buffer.isBuffer(csvContent) ? csvContent.toString('utf-8') : String(csvContent);
     const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
@@ -44,45 +52,95 @@ class LapAnalysisService {
       throw new Error('CSV must contain a header and at least one lap data row.');
     }
 
-    const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const lapIndex = header.findIndex((h) => h.includes('lap') && !h.includes('time'));
-    const timeIndex = header.findIndex((h) => h.includes('time') || h === 'laptime');
-    const s1Index = header.findIndex((h) => h === 's1' || h.includes('sector1') || h.includes('sector 1'));
-    const s2Index = header.findIndex((h) => h === 's2' || h.includes('sector2') || h.includes('sector 2'));
-    const s3Index = header.findIndex((h) => h === 's3' || h.includes('sector3') || h.includes('sector 3'));
-    const speedIndex = header.findIndex((h) => h.includes('speed') || h.includes('topspeed') || h.includes('trap'));
-    const degIndex = header.findIndex((h) => h.includes('deg') || h.includes('tire') || h.includes('tyre'));
-    const stressEventIndex = header.findIndex((h) => h.includes('stress') || h.includes('event') || h.includes('note'));
+    // Normalize header columns
+    const header = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ''));
+    
+    // Find column indexes
+    const lapIndex = header.findIndex((h) => h === 'lap' || h === 'lapnum' || h === 'lapnumber' || (h.includes('lap') && !h.includes('time')));
+    const timeIndex = header.findIndex((h) => h === 'laptime' || h === 'time' || h === 'laptimesec' || h.includes('laptime'));
+    const s1Index = header.findIndex((h) => h === 's1' || h === 'sector1' || h.includes('s1'));
+    const s2Index = header.findIndex((h) => h === 's2' || h === 'sector2' || h.includes('s2'));
+    const s3Index = header.findIndex((h) => h === 's3' || h === 'sector3' || h.includes('s3'));
+    const speedIndex = header.findIndex((h) => h === 'topspeed' || h === 'speed' || h === 'velocity' || h.includes('speed'));
+    const degIndex = header.findIndex((h) => h === 'tiredeg' || h === 'tyredeg' || h === 'deg' || h.includes('deg'));
+    const stressEventIndex = header.findIndex((h) => h === 'stressevent' || h === 'event' || h === 'note' || h === 'incident');
 
     const laps = [];
+    const validationErrors = [];
 
     for (let i = 1; i < lines.length; i++) {
+      const lineNum = i + 1;
       const row = lines[i].split(',').map((col) => col.trim());
       if (row.length === 0 || !row[0]) continue;
 
-      const lapNumber = lapIndex !== -1 ? parseInt(row[lapIndex], 10) || i : i;
-      const rawTime = timeIndex !== -1 ? row[timeIndex] : row[1] || '1:30.000';
+      // Extract & Validate Lap Number
+      let lapNumber = i;
+      if (lapIndex !== -1 && row[lapIndex]) {
+        const parsedLap = parseInt(row[lapIndex], 10);
+        if (isNaN(parsedLap) || parsedLap <= 0) {
+          validationErrors.push(`Row ${lineNum}: Invalid lap number "${row[lapIndex]}". Must be a positive integer.`);
+          continue;
+        }
+        lapNumber = parsedLap;
+      }
+
+      // Extract & Validate Lap Time
+      const rawTime = timeIndex !== -1 && row[timeIndex] ? row[timeIndex] : (row[1] || '');
+      if (!rawTime) {
+        validationErrors.push(`Row ${lineNum}: Missing lap time value.`);
+        continue;
+      }
+
       const lapTimeSec = timeStrToSeconds(rawTime);
+      if (isNaN(lapTimeSec) || lapTimeSec <= 0) {
+        validationErrors.push(`Row ${lineNum}: Invalid lap time format "${rawTime}". Expected e.g. "1:29.420" or "89.42".`);
+        continue;
+      }
 
-      if (lapTimeSec <= 0) continue;
+      // Format lap time consistently
+      const formattedLapTime = rawTime.includes(':') ? rawTime : secondsToTimeStr(lapTimeSec);
 
-      const s1 = s1Index !== -1 ? row[s1Index] : '28.150';
-      const s2 = s2Index !== -1 ? row[s2Index] : '34.300';
-      const s3 = s3Index !== -1 ? row[s3Index] : '27.150';
-      const topSpeed = speedIndex !== -1 ? parseFloat(row[speedIndex]) || 326.0 : 326.0;
-      const tireDeg = degIndex !== -1 ? parseFloat(row[degIndex]) || Math.round(i * 2.2 * 10) / 10 : 20.0;
+      // Extract or Synthesize Sector Splits for 2-column CSVs
+      let s1, s2, s3, s1Sec, s2Sec, s3Sec;
+      if (s1Index !== -1 && row[s1Index]) {
+        s1 = row[s1Index];
+        s1Sec = timeStrToSeconds(s1);
+      } else {
+        s1Sec = Math.round(lapTimeSec * 0.314 * 1000) / 1000;
+        s1 = `${s1Sec.toFixed(3)}s`;
+      }
+
+      if (s2Index !== -1 && row[s2Index]) {
+        s2 = row[s2Index];
+        s2Sec = timeStrToSeconds(s2);
+      } else {
+        s2Sec = Math.round(lapTimeSec * 0.383 * 1000) / 1000;
+        s2 = `${s2Sec.toFixed(3)}s`;
+      }
+
+      if (s3Index !== -1 && row[s3Index]) {
+        s3 = row[s3Index];
+        s3Sec = timeStrToSeconds(s3);
+      } else {
+        s3Sec = Math.round((lapTimeSec - s1Sec - s2Sec) * 1000) / 1000;
+        s3 = `${s3Sec.toFixed(3)}s`;
+      }
+
+      // Top Speed & Tire Deg
+      const topSpeed = speedIndex !== -1 && row[speedIndex] ? parseFloat(row[speedIndex]) || 326.0 : Math.round((325 + (i % 4) * 1.5) * 10) / 10;
+      const tireDeg = degIndex !== -1 && row[degIndex] ? parseFloat(row[degIndex]) || Math.round(i * 2.2 * 10) / 10 : Math.min(85, Math.round(i * 2.2 * 10) / 10);
       const stressEvent = stressEventIndex !== -1 ? row[stressEventIndex] || '' : '';
 
       laps.push({
         lap: lapNumber,
-        lapTime: rawTime.includes(':') ? rawTime : secondsToTimeStr(lapTimeSec),
+        lapTime: formattedLapTime,
         lapTimeSec,
         s1: String(s1).endsWith('s') ? s1 : `${s1}s`,
         s2: String(s2).endsWith('s') ? s2 : `${s2}s`,
         s3: String(s3).endsWith('s') ? s3 : `${s3}s`,
-        s1Sec: timeStrToSeconds(s1),
-        s2Sec: timeStrToSeconds(s2),
-        s3Sec: timeStrToSeconds(s3),
+        s1Sec,
+        s2Sec,
+        s3Sec,
         topSpeed: `${topSpeed} km/h`,
         topSpeedNum: topSpeed,
         tireDeg: `${tireDeg}%`,
@@ -92,8 +150,18 @@ class LapAnalysisService {
     }
 
     if (laps.length === 0) {
-      throw new Error('No valid lap rows could be parsed from the provided CSV file.');
+      const errorDetail = validationErrors.length > 0 ? `: ${validationErrors.join(', ')}` : '';
+      throw new Error(`No valid lap records found in CSV${errorDetail}`);
     }
+
+    // Sort laps sequentially by lap number
+    laps.sort((a, b) => a.lap - b.lap);
+
+    logger.info(`Successfully parsed ${laps.length} laps from CSV`, {
+      lapsCount: laps.length,
+      startLap: laps[0].lap,
+      endLap: laps[laps.length - 1].lap,
+    });
 
     return laps;
   }
@@ -173,6 +241,7 @@ class LapAnalysisService {
 
     return {
       totalLaps: laps.length,
+      currentLap: laps[laps.length - 1].lap,
       fastestLap: {
         lap: fastest.lap,
         lapTime: fastest.lapTime,

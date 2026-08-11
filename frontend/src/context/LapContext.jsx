@@ -1,22 +1,31 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { lapsApi } from '../services/api';
+import { lapsApi, sessionApi } from '../services/api';
 
 const LapContext = createContext(null);
 
 export const LapProvider = ({ children }) => {
   const [sessionData, setSessionData] = useState(null);
+  const [currentSession, setCurrentSession] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
 
   const fetchSession = useCallback(async () => {
     try {
-      const response = await lapsApi.getSession();
-      if (response.success && response.data) {
-        setSessionData(response.data);
+      const [lapRes, sessionRes] = await Promise.allSettled([
+        lapsApi.getSession(),
+        sessionApi.getCurrentSession(),
+      ]);
+
+      if (lapRes.status === 'fulfilled' && lapRes.value?.success && lapRes.value?.data) {
+        setSessionData(lapRes.value.data);
+      }
+
+      if (sessionRes.status === 'fulfilled' && sessionRes.value?.success && sessionRes.value?.data) {
+        setCurrentSession(sessionRes.value.data);
       }
     } catch (err) {
-      console.warn('Could not fetch lap session from backend:', err);
+      console.warn('Could not fetch session from backend:', err);
     }
   }, []);
 
@@ -112,6 +121,9 @@ export const LapProvider = ({ children }) => {
 
       if (response.success && response.data) {
         setSessionData(response.data);
+        if (response.data.session) {
+          setCurrentSession(response.data.session);
+        }
         return { success: true, data: response.data };
       }
 
@@ -135,6 +147,9 @@ export const LapProvider = ({ children }) => {
       const response = await lapsApi.analyzeLaps({ filename: 'silverstone_stint1_telemetry.csv' });
       if (response.success && response.data) {
         setSessionData(response.data);
+        if (response.data.session) {
+          setCurrentSession(response.data.session);
+        }
         return { success: true, data: response.data };
       }
       throw new Error(response.message || 'Failed to load sample dataset');
@@ -147,13 +162,20 @@ export const LapProvider = ({ children }) => {
     }
   }, []);
 
+  const lapsLoaded = sessionData?.lapsLoaded || sessionData?.lapStats?.totalLaps || currentSession?.totalLaps || 18;
+  const currentLap = sessionData?.currentLap || sessionData?.lapStats?.currentLap || currentSession?.currentLap || 18;
+
   return (
     <LapContext.Provider
       value={{
         sessionData,
-        lapStats: sessionData?.lapStats || null,
-        correlation: sessionData?.correlation || null,
-        filename: sessionData?.filename || 'silverstone_stint1_telemetry.csv',
+        currentSession,
+        lapStats: sessionData?.lapStats || currentSession?.lapStats || null,
+        correlation: sessionData?.correlation || currentSession?.correlation || null,
+        filename: sessionData?.filename || currentSession?.lapFilename || 'silverstone_stint1_telemetry.csv',
+        lapsLoaded,
+        currentLap,
+        totalLaps: lapsLoaded,
         isAnalyzing,
         uploadProgress,
         error,

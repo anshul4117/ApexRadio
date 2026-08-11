@@ -16,13 +16,15 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `radio-${uniqueSuffix}${ext}`);
+    const prefix = file.fieldname === 'csv' ? 'telemetry' : 'radio';
+    cb(null, `${prefix}-${uniqueSuffix}${ext}`);
   },
 });
 
-// File filter: only accept WAV and MP3 audio
+// File filter: accept WAV/MP3 audio and CSV telemetry files
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = ['.wav', '.mp3', '.flac', '.ogg'];
+  const allowedAudioExts = ['.wav', '.mp3', '.flac', '.ogg', '.m4a'];
+  const allowedCsvExts = ['.csv', '.txt'];
   const allowedMimeTypes = [
     'audio/wav',
     'audio/x-wav',
@@ -30,15 +32,23 @@ const fileFilter = (req, file, cb) => {
     'audio/mp3',
     'audio/ogg',
     'audio/x-m4a',
+    'text/csv',
+    'text/plain',
+    'application/csv',
+    'application/vnd.ms-excel',
     'application/octet-stream',
   ];
 
   const ext = path.extname(file.originalname).toLowerCase();
 
-  if (allowedExtensions.includes(ext) || allowedMimeTypes.includes(file.mimetype)) {
+  if (
+    allowedAudioExts.includes(ext) ||
+    allowedCsvExts.includes(ext) ||
+    allowedMimeTypes.includes(file.mimetype)
+  ) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid audio format. Only WAV, MP3, and FLAC audio files are supported.'), false);
+    cb(new Error(`Unsupported file format (${ext || file.mimetype}). Supported formats: Audio (.wav, .mp3) and Telemetry (.csv).`), false);
   }
 };
 

@@ -3,6 +3,7 @@ import {
   Volume2,
   UploadCloud,
   FileAudio,
+  FileSpreadsheet,
   Sparkles,
   Gauge,
   Activity,
@@ -15,6 +16,7 @@ import {
   Zap,
   Radio,
   SlidersHorizontal,
+  ArrowRight,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -44,11 +46,26 @@ export const RadioAnalysisPage = () => {
     setCurrentAnalysis,
   } = useRadio();
 
-  const { lapStats, correlation } = useLap();
+  const {
+    lapStats,
+    correlation,
+    lapsLoaded,
+    currentLap,
+    filename: lapFilename,
+    uploadCsv,
+    loadSamplePreset,
+    isAnalyzing: isLapAnalyzing,
+    uploadProgress: lapProgress,
+    error: lapError,
+  } = useLap();
 
   const [copied, setCopied] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef(null);
+  const [audioDragOver, setAudioDragOver] = useState(false);
+  const [csvDragOver, setCsvDragOver] = useState(false);
+  const [csvSuccessMessage, setCsvSuccessMessage] = useState(null);
+
+  const audioFileInputRef = useRef(null);
+  const csvFileInputRef = useRef(null);
 
   // Typewriter effect on the active transcript
   const { displayedText, isDone: isTypewriterDone } = useTypewriter(
@@ -100,19 +117,45 @@ export const RadioAnalysisPage = () => {
     },
   ];
 
-  const handleFileChange = (e) => {
+  // Audio Upload Handlers
+  const handleAudioFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       analyzeFile(file);
     }
   };
 
-  const handleDrop = (e) => {
+  const handleAudioDrop = (e) => {
     e.preventDefault();
-    setDragOver(false);
+    setAudioDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
       analyzeFile(file);
+    }
+  };
+
+  // CSV Upload Handlers
+  const handleCsvFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const res = await uploadCsv(file);
+      if (res?.success) {
+        setCsvSuccessMessage(`Successfully loaded ${res.data?.lapsLoaded || res.data?.lapStats?.totalLaps || '18'} laps.`);
+        setTimeout(() => setCsvSuccessMessage(null), 4000);
+      }
+    }
+  };
+
+  const handleCsvDrop = async (e) => {
+    e.preventDefault();
+    setCsvDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const res = await uploadCsv(file);
+      if (res?.success) {
+        setCsvSuccessMessage(`Successfully loaded ${res.data?.lapsLoaded || res.data?.lapStats?.totalLaps || '18'} laps.`);
+        setTimeout(() => setCsvSuccessMessage(null), 4000);
+      }
     }
   };
 
@@ -136,27 +179,41 @@ export const RadioAnalysisPage = () => {
   const isFatigued = emotion.driverState === 'Fatigued';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       
       {/* Section Header */}
       <SectionHeader
         title="Driver Radio & Acoustic Emotion Pipeline"
-        subtitle="Hugging Face Whisper STT transcription, vocal pitch jitter extraction & driver cognitive load classification"
+        subtitle="Groq Whisper Large v3 STT transcription, vocal pitch jitter extraction, CSV lap telemetry correlation & race session synchronization"
         badge={
-          <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'high-stress' : 'nominal'}>
-            {emotion.driverState || 'Stressed'} ({emotion.stressScore || 78}%)
-          </StatusBadge>
+          <div className="flex items-center gap-2">
+            <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'high-stress' : 'nominal'}>
+              {emotion.driverState || 'Stressed'} ({emotion.stressScore || 78}%)
+            </StatusBadge>
+            <Badge variant="outline" size="sm">
+              Current: Lap {currentLap} ({lapsLoaded} Laps Synchronized)
+            </Badge>
+          </div>
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => audioFileInputRef.current?.click()}
               className="gap-1.5"
             >
               <UploadCloud className="w-3.5 h-3.5 text-zinc-500" />
-              Upload Radio Audio
+              Upload Audio
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => csvFileInputRef.current?.click()}
+              className="gap-1.5"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-500" />
+              Upload Lap CSV
             </Button>
             <Button variant="outline" size="sm" onClick={resetAnalysisState} className="gap-1.5">
               <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
@@ -166,290 +223,339 @@ export const RadioAnalysisPage = () => {
         }
       />
 
-      {/* Hidden File Picker */}
+      {/* Hidden File Inputs */}
       <input
-        ref={fileInputRef}
+        ref={audioFileInputRef}
         type="file"
         accept="audio/wav, audio/mp3, audio/mpeg, .wav, .mp3"
-        onChange={handleFileChange}
+        onChange={handleAudioFileChange}
+        className="hidden"
+      />
+      <input
+        ref={csvFileInputRef}
+        type="file"
+        accept=".csv, text/csv, text/plain"
+        onChange={handleCsvFileChange}
         className="hidden"
       />
 
-      {/* Error Alert */}
+      {/* Error Alerts */}
       {radioError && (
-        <div className="p-3.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2 animate-in fade-in">
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{radioError}</span>
         </div>
       )}
+      {lapError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{lapError}</span>
+        </div>
+      )}
 
-      {/* Main 2-Column Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* DUAL INGESTION GRID: Radio Audio Upload & Lap Time CSV Ingestion */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         
-        {/* Left Column (2 Cols): Upload Dropzone & Live Waveform Visualizer */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Audio Upload Dropzone & Real-Time Processing Stepper */}
-          <Card
-            title="Team Radio Audio Stream Ingestion"
-            subtitle="Drag & drop cockpit audio or choose from motorsport simulation presets"
-            action={<Badge variant="outline" size="sm">Channel 1 (Live)</Badge>}
-          >
-            <div className="space-y-4">
-              
-              {/* Dropzone Area */}
-              {isAnalyzing ? (
-                <div className="p-6 text-center space-y-4 bg-zinc-50/50 dark:bg-zinc-950/40 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                  <div className="relative w-10 h-10 mx-auto">
-                    <Activity className="w-10 h-10 text-zinc-900 dark:text-white animate-pulse" />
+        {/* 1. Radio Audio Stream Ingestion Card */}
+        <Card
+          title="Team Radio Audio Ingestion"
+          subtitle="Upload cockpit voice recording (.wav/.mp3)"
+          action={<Badge variant="outline" size="sm">Channel 1 (Live)</Badge>}
+        >
+          <div className="space-y-3">
+            {isAnalyzing ? (
+              <div className="p-6 text-center space-y-3 bg-zinc-50/50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <Activity className="w-8 h-8 mx-auto text-zinc-900 dark:text-white animate-pulse" />
+                <div className="space-y-1.5 max-w-sm mx-auto">
+                  <p className="text-xs font-semibold text-zinc-950 dark:text-white capitalize">
+                    {analysisStep === 'uploading' && `Uploading Radio Transmission (${uploadProgress}%)...`}
+                    {analysisStep === 'transcribing' && 'Transcribing with Groq Whisper Large v3 LPU...'}
+                    {analysisStep === 'analyzing' && 'Extracting Vocal Pitch Jitter & Acoustic Emotion...'}
+                    {analysisStep === 'correlating' && 'Correlating Biometrics with CAN Bus Telemetry...'}
+                    {analysisStep === 'completed' && 'Analysis Completed! Updating Dashboard...'}
+                  </p>
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300"
+                      style={{
+                        width: `${
+                          analysisStep === 'uploading'
+                            ? uploadProgress
+                            : analysisStep === 'transcribing'
+                            ? 45
+                            : analysisStep === 'analyzing'
+                            ? 75
+                            : analysisStep === 'correlating'
+                            ? 92
+                            : 100
+                        }%`,
+                      }}
+                    />
                   </div>
-                  
-                  <div className="space-y-1.5 max-w-sm mx-auto">
-                    <p className="text-xs font-semibold text-zinc-950 dark:text-white capitalize">
-                      {analysisStep === 'uploading' && `Uploading Radio Transmission (${uploadProgress}%)...`}
-                      {analysisStep === 'transcribing' && 'Transcribing with Groq Whisper Large v3 LPU...'}
-                      {analysisStep === 'analyzing' && 'Extracting Vocal Pitch Jitter & Acoustic Emotion...'}
-                      {analysisStep === 'correlating' && 'Correlating Biometrics with CAN Bus Telemetry...'}
-                      {analysisStep === 'completed' && 'Analysis Completed! Updating Dashboard...'}
-                    </p>
-                    
-                    {/* Progress Bar */}
-                    <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300"
-                        style={{
-                          width: `${
-                            analysisStep === 'uploading'
-                              ? uploadProgress
-                              : analysisStep === 'transcribing'
-                              ? 45
-                              : analysisStep === 'analyzing'
-                              ? 75
-                              : analysisStep === 'correlating'
-                              ? 92
-                              : 100
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Step Pills */}
-                  <div className="flex flex-wrap justify-center gap-1.5 pt-1 text-[10px]">
-                    <span className={`px-2 py-0.5 rounded ${analysisStep === 'uploading' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-semibold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
-                      1. Upload
-                    </span>
-                    <span className={`px-2 py-0.5 rounded ${analysisStep === 'transcribing' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-semibold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
-                      2. Whisper STT
-                    </span>
-                    <span className={`px-2 py-0.5 rounded ${analysisStep === 'analyzing' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-semibold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
-                      3. Emotion NLP
-                    </span>
-                    <span className={`px-2 py-0.5 rounded ${analysisStep === 'correlating' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-semibold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
-                      4. Telemetry Correlation
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border border-dashed rounded-lg p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-2 ${
-                    dragOver
-                      ? 'border-zinc-900 bg-zinc-100 dark:border-white dark:bg-zinc-900'
-                      : 'border-zinc-300 dark:border-zinc-700 bg-zinc-50/40 dark:bg-zinc-950/30 hover:border-zinc-500'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
-                    <FileAudio className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-zinc-950 dark:text-white">
-                      Drag and drop driver audio here, or click to browse
-                    </p>
-                    <p className="text-[11px] text-zinc-500">
-                      Supports high-fidelity WAV and MP3 cockpit audio recordings (Max 25MB)
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Sample Simulation Presets */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-medium text-zinc-400 block">
-                  Quick Simulation Presets (1-Click Real-Time Trigger):
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {samplePresets.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      disabled={isAnalyzing}
-                      onClick={() => analyzePreset(preset)}
-                      className="p-2.5 rounded-md border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-400 dark:hover:border-zinc-600 text-left text-xs transition-all flex items-center justify-between group cursor-pointer shadow-2xs"
-                    >
-                      <div className="space-y-0.5 truncate">
-                        <span className="font-semibold text-zinc-950 dark:text-white block group-hover:text-zinc-900 dark:group-hover:text-white">
-                          {preset.title}
-                        </span>
-                        <span className="text-[11px] text-zinc-500 block truncate">
-                          {preset.driver} · Lap {preset.lap}
-                        </span>
-                      </div>
-                      <Badge variant="outline" size="sm">Stress {preset.stress}</Badge>
-                    </button>
-                  ))}
                 </div>
               </div>
+            ) : (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setAudioDragOver(true);
+                }}
+                onDragLeave={() => setAudioDragOver(false)}
+                onDrop={handleAudioDrop}
+                onClick={() => audioFileInputRef.current?.click()}
+                className={`border border-dashed rounded-xl p-5 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-2 ${
+                  audioDragOver
+                    ? 'border-zinc-900 bg-zinc-100 dark:border-white dark:bg-zinc-900'
+                    : 'border-zinc-300 dark:border-zinc-700 bg-zinc-50/40 dark:bg-zinc-950/30 hover:border-zinc-500'
+                }`}
+              >
+                <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
+                  <FileAudio className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                    Drag and drop driver audio here, or click to browse
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    Supports high-fidelity WAV and MP3 cockpit audio (Max 25MB)
+                  </p>
+                </div>
+              </div>
+            )}
 
+            {/* Simulation Presets */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-medium text-zinc-400 block">
+                Quick Simulation Presets:
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {samplePresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={isAnalyzing}
+                    onClick={() => analyzePreset(preset)}
+                    className="p-2 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-400 dark:hover:border-zinc-600 text-left text-xs transition-all flex items-center justify-between group cursor-pointer shadow-2xs"
+                  >
+                    <div className="truncate">
+                      <span className="font-semibold text-zinc-950 dark:text-white block text-[11px] truncate">
+                        {preset.title}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 block">Stress: {preset.stress}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* 2. Lap Time CSV Telemetry Ingestion Card */}
+        <Card
+          title="Lap Time CSV Ingestion"
+          subtitle="Upload real lap-time data (columns: lap,lap_time)"
+          action={<Badge variant="outline" size="sm">Session Sync</Badge>}
+        >
+          <div className="space-y-3">
+            {isLapAnalyzing ? (
+              <div className="p-6 text-center space-y-3 bg-zinc-50/50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <Activity className="w-8 h-8 mx-auto text-zinc-900 dark:text-white animate-pulse" />
+                <div className="space-y-1 max-w-sm mx-auto">
+                  <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                    Parsing Lap Telemetry ({lapProgress}%)...
+                  </p>
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300"
+                      style={{ width: `${lapProgress || 65}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setCsvDragOver(true);
+                }}
+                onDragLeave={() => setCsvDragOver(false)}
+                onDrop={handleCsvDrop}
+                onClick={() => csvFileInputRef.current?.click()}
+                className={`border border-dashed rounded-xl p-5 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-2 ${
+                  csvDragOver
+                    ? 'border-zinc-900 bg-zinc-100 dark:border-white dark:bg-zinc-900'
+                    : 'border-zinc-300 dark:border-zinc-700 bg-zinc-50/40 dark:bg-zinc-950/30 hover:border-zinc-500'
+                }`}
+              >
+                <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                    Drag and drop lap timing CSV here, or click to upload
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    Accepts CSV with columns: <code>lap,lap_time</code>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Telemetry Status & Lap Count Readout */}
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  <span className="font-semibold text-zinc-950 dark:text-white">
+                    {lapsLoaded} Laps Loaded
+                  </span>
+                </div>
+                <Badge variant="white" size="sm">
+                  Active Lap: {currentLap}
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1 border-t border-zinc-200/40 dark:border-zinc-800/40">
+                <span>Dataset: <strong className="text-zinc-700 dark:text-zinc-300 font-mono truncate max-w-[130px] inline-block align-bottom">{lapFilename || 'custom_laps.csv'}</strong></span>
+                <span>Fastest: <strong className="text-zinc-900 dark:text-zinc-100 font-mono">{lapStats?.fastestLap?.lapTime || '1:29.420'}</strong></span>
+              </div>
+            </div>
+
+            {csvSuccessMessage && (
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-1.5 animate-in fade-in">
+                <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{csvSuccessMessage}</span>
+              </div>
+            )}
+          </div>
+        </Card>
+
+      </div>
+
+      {/* Main 3-Column Analytics Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column (2 Cols): Live Waveform & Typewriter Transcript Card */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Live Waveform Visualizer */}
+          <Card
+            title="Cockpit Audio Waveform Visualizer"
+            subtitle="Normalized frequency bins & vocal amplitude envelope"
+            action={<Badge variant="white" size="sm">FFT Signal</Badge>}
+          >
+            <div className="space-y-4">
+              <AudioWaveformVisualizer isPlaying={isAnalyzing} className="py-2" />
+              
+              <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+                <span>Vocal Intensity: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{emotion.vocalIntensity || '88 dB'}</strong></span>
+                <span>Pitch Jitter: <strong className="text-rose-600 dark:text-rose-400 font-mono">{emotion.pitchJitter || '+42.5 Hz'}</strong></span>
+                <span>Cadence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{emotion.speechCadence || '185 WPM'}</strong></span>
+              </div>
             </div>
           </Card>
 
-          {/* Interactive Audio Waveform & Typewriter Transcript Card */}
+          {/* Transcript Typewriter Card */}
           <Card
-            title="Cockpit Audio Waveform & Speech Transcript"
-            subtitle={`${currentAnalysis?.metadata?.originalName || 'lap18_ver_understeer.wav'} · Duration: ${currentAnalysis?.metadata?.audioDuration || '4.2s'}`}
+            title="Live Groq Speech-to-Text Transcription"
+            subtitle="High-fidelity cockpit speech transcription with domain vocabulary"
             action={
               <button
                 type="button"
                 onClick={handleCopy}
-                className="text-xs text-zinc-500 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Copy Transcript"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied Transcript' : 'Copy Quote'}</span>
+                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
               </button>
             }
+            footer={
+              <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500">
+                <span>Model: <strong>{currentAnalysis?.metadata?.sttModel || 'whisper-large-v3'}</strong></span>
+                <span>Latency: <strong className="font-mono">{currentAnalysis?.processingTime || '1.14s'}</strong></span>
+                <span>Confidence: <strong className="font-mono">{currentAnalysis?.confidence || 94.2}%</strong></span>
+              </div>
+            }
           >
-            <div className="space-y-4">
-              
-              {/* Dynamic Waveform Player */}
-              <AudioWaveformVisualizer
-                duration={currentAnalysis?.metadata?.audioDuration || '4.2s'}
-                isProcessing={isAnalyzing}
-                stressLevel={isElevated ? 'high' : 'nominal'}
-              />
-
-              {/* Typewriter Transcript Reveal */}
-              <div className="p-4 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 space-y-2">
-                <div className="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-100 dark:border-zinc-800 pb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-zinc-900 dark:text-white">
-                      {currentAnalysis?.driver || 'Max Verstappen'} ({currentAnalysis?.car || 'Car #1'})
-                    </span>
-                    <Badge variant="white" size="sm">Lap {currentAnalysis?.lap || 18}</Badge>
-                  </div>
-                  <span className="font-tabular text-[11px]">
-                    Processed in {currentAnalysis?.processingTime || '1.14s'}
-                  </span>
-                </div>
-
-                <p className="text-sm text-zinc-900 dark:text-zinc-100 font-medium italic leading-relaxed min-h-[3rem]">
-                  "{displayedText}"
-                  {!isTypewriterDone && <span className="inline-block w-1.5 h-4 bg-zinc-900 dark:bg-white ml-0.5 animate-pulse" />}
-                </p>
-
-                <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
-                  <span>STT Model: <strong className="text-zinc-800 dark:text-zinc-200 font-mono text-[11px]">openai/whisper-large-v3</strong></span>
-                  <span>Confidence: <strong className="text-zinc-800 dark:text-zinc-200 font-tabular">{currentAnalysis?.confidence || 94.2}%</strong></span>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="text-xs font-semibold text-zinc-950 dark:text-white">
+                  {currentAnalysis?.driver || 'Max Verstappen'} ({currentAnalysis?.car || 'Car #1'}) · Lap {currentAnalysis?.lap || currentLap}
+                </span>
               </div>
 
+              <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 font-mono text-sm leading-relaxed text-zinc-900 dark:text-zinc-100 min-h-[80px]">
+                {displayedText || <span className="text-zinc-400 italic">Awaiting radio transmission...</span>}
+                {!isTypewriterDone && <span className="inline-block w-1.5 h-4 bg-rose-500 ml-1 animate-pulse align-middle" />}
+              </div>
             </div>
           </Card>
 
         </div>
 
-        {/* Right Column: Real-Time Biometric Load & AI Directives */}
+        {/* Right Column (1 Col): Biometric Stress Gauge & Emotion Classification */}
         <div className="space-y-6">
           
-          {/* Real-Time Acoustic Emotion Metrics */}
+          {/* Driver State & Biometric Gauge */}
           <Card
-            title="Biometric Acoustic Load"
-            subtitle="Extracted speech prosody & stress"
+            title="Biometric Emotion Classifier"
+            subtitle="Acoustic pitch & NLP sentiment"
             badge={
               <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'high-stress' : 'nominal'} size="sm">
                 {emotion.driverState || 'Stressed'}
               </StatusBadge>
             }
           >
-            <div className="space-y-3.5 text-xs">
-              
-              {/* Stress Score Gauge */}
-              <div className="space-y-1.5">
+            <div className="space-y-4">
+              <div className="space-y-1">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-zinc-500">Cognitive Stress Index:</span>
-                  <span className="text-2xl font-semibold text-zinc-950 dark:text-white font-tabular">
-                    {emotion.stressScore || 78}<span className="text-xs font-normal text-zinc-400">/100</span>
+                  <span className="text-xs text-zinc-500">Stress Index</span>
+                  <span className="text-2xl font-bold text-zinc-950 dark:text-white font-mono">
+                    {emotion.stressScore || 78}%
                   </span>
                 </div>
                 <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${
-                      isElevated ? 'bg-rose-500' : isFatigued ? 'bg-amber-400' : 'bg-zinc-950 dark:bg-white'
+                      isElevated ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-zinc-900 dark:bg-zinc-100'
                     }`}
                     style={{ width: `${emotion.stressScore || 78}%` }}
                   />
                 </div>
               </div>
 
-              {/* Acoustic Breakdown Items */}
-              <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500">Pitch Jitter Delta:</span>
-                  <span className={`font-semibold font-tabular ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                    {emotion.pitchJitter || '+42.5 Hz'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500">Speech Cadence:</span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100 font-tabular">
-                    {emotion.speechCadence || '185 WPM'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500">Vocal Intensity:</span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100 font-tabular">
-                    {emotion.vocalIntensity || '88 dB'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500">Detected Emotion:</span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100 capitalize">
-                    {emotion.emotionLabel || 'Frustrated'}
-                  </span>
-                </div>
-              </div>
+              {/* Multi-Class Emotion Model Scores */}
+              <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-xs">
+                <span className="text-[11px] font-semibold text-zinc-400 block uppercase tracking-wider">
+                  Model Probability Breakdown
+                </span>
 
-            </div>
-          </Card>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                    <span>Anger / Frustration</span>
+                    <span className="font-mono font-medium text-zinc-950 dark:text-white">78.2%</span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-rose-500 h-full rounded-full" style={{ width: '78.2%' }} />
+                  </div>
 
-          {/* AI Recommended Tactical Directive */}
-          <Card
-            title="Generated Pit Wall Directive"
-            subtitle="Autonomous race engineer support"
-            badge={<StatusBadge status="strategy" size="sm">Tactical</StatusBadge>}
-          >
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 space-y-1.5 shadow-2xs">
-                <div className="flex items-center gap-1.5 font-semibold text-xs">
-                  <Zap className="w-3.5 h-3.5 text-rose-400 dark:text-rose-600" />
-                  <span>{currentAnalysis?.recommendation?.category || 'Radio Brevity Directive'}</span>
+                  <div className="flex justify-between text-zinc-600 dark:text-zinc-400 pt-1">
+                    <span>Tension / Anxiety</span>
+                    <span className="font-mono font-medium text-zinc-950 dark:text-white">14.1%</span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-amber-400 h-full rounded-full" style={{ width: '14.1%' }} />
+                  </div>
+
+                  <div className="flex justify-between text-zinc-600 dark:text-zinc-400 pt-1">
+                    <span>Neutral / Calm</span>
+                    <span className="font-mono font-medium text-zinc-950 dark:text-white">7.7%</span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-zinc-400 h-full rounded-full" style={{ width: '7.7%' }} />
+                  </div>
                 </div>
-                <p className="opacity-95 leading-relaxed font-normal text-xs">
-                  "{currentAnalysis?.recommendation?.action || 'Enforce radio silence through Sector 2 high-G corners.'}"
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between text-zinc-500 pt-1">
-                <span>Target Pit Entry:</span>
-                <strong className="text-zinc-900 dark:text-zinc-100">
-                  {currentAnalysis?.recommendation?.pitWindow || 'Lap 21 (Hard compound)'}
-                </strong>
               </div>
             </div>
           </Card>

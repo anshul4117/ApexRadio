@@ -83,7 +83,7 @@ export const radioApi = {
     const isFormData = data instanceof FormData;
     return api.post('/radio/analyze', data, {
       headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' },
-      timeout: 90000, // 90s for Hugging Face STT inference
+      timeout: 90000, // 90s for STT inference
       onUploadProgress: onProgress,
     });
   },
@@ -99,6 +99,11 @@ export const lapsApi = {
     }),
   analyzeLaps: (data) => api.post('/laps/analyze', data),
   getSession: () => api.get('/laps/session'),
+};
+
+export const sessionApi = {
+  getCurrentSession: () => api.get('/session/current'),
+  resetSession: () => api.post('/session/reset'),
 };
 
 export const healthApi = {

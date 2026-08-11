@@ -3,10 +3,8 @@ const path = require('path');
 const lapAnalysisService = require('../services/lapAnalysisService');
 const correlationService = require('../services/correlationService');
 const radioAnalysisService = require('../services/radioAnalysisService');
+const sessionService = require('../services/sessionService');
 const { sendSuccess, sendError } = require('../utils/response.util');
-
-// In-memory session state for lap telemetry
-let currentLapSession = null;
 
 // Initialize with default sample dataset
 const initDefaultSession = () => {
@@ -20,13 +18,13 @@ const initDefaultSession = () => {
       const radioHistory = radioAnalysisService.getHistory();
       const correlation = correlationService.correlate(lapStats, latestRadio, radioHistory);
 
-      currentLapSession = {
-        id: 'session_stint1',
-        filename: 'silverstone_stint1_telemetry.csv',
+      sessionService.updateLapData({
+        laps,
         lapStats,
         correlation,
-        updatedAt: new Date().toISOString(),
-      };
+        filename: 'silverstone_stint1_telemetry.csv',
+        driverName: 'Max Verstappen',
+      });
     }
   } catch (err) {
     console.warn('Could not load initial default lap session:', err.message);
@@ -37,6 +35,8 @@ initDefaultSession();
 
 /**
  * POST /api/laps/upload
+ * Accepts CSV with columns: lap,lap_time (or full telemetry)
+ * Validates and updates unified race session
  */
 const uploadCsv = async (req, res, next) => {
   const filePath = req.file?.path || null;
@@ -53,15 +53,27 @@ const uploadCsv = async (req, res, next) => {
     const radioHistory = radioAnalysisService.getHistory();
     const correlation = correlationService.correlate(lapStats, latestRadio, radioHistory);
 
-    currentLapSession = {
-      id: `session_${Date.now()}`,
-      filename: req.file.originalname,
+    const session = sessionService.updateLapData({
+      laps,
       lapStats,
       correlation,
-      updatedAt: new Date().toISOString(),
-    };
+      filename: req.file.originalname,
+      driverName: req.body?.driverName,
+    });
 
-    return sendSuccess(res, 200, currentLapSession, 'CSV telemetry parsed and analyzed');
+    return sendSuccess(
+      res,
+      200,
+      {
+        lapStats,
+        correlation,
+        session,
+        lapsLoaded: laps.length,
+        currentLap: laps[laps.length - 1].lap,
+        filename: req.file.originalname,
+      },
+      'CSV telemetry parsed and session synchronized'
+    );
   } catch (error) {
     next(error);
   } finally {
@@ -88,7 +100,6 @@ const analyzeLaps = async (req, res, next) => {
     }
 
     if (!content) {
-      // If no CSV provided, load sample dataset
       const sampleCsvPath = path.join(__dirname, '../../../sample-data/silverstone_stint1_telemetry.csv');
       content = fs.readFileSync(sampleCsvPath, 'utf-8');
     }
@@ -100,15 +111,25 @@ const analyzeLaps = async (req, res, next) => {
     const radioHistory = radioAnalysisService.getHistory();
     const correlation = correlationService.correlate(lapStats, latestRadio, radioHistory);
 
-    currentLapSession = {
-      id: `session_${Date.now()}`,
-      filename: req.body.filename || req.file?.originalname || 'silverstone_stint1_telemetry.csv',
+    const session = sessionService.updateLapData({
+      laps,
       lapStats,
       correlation,
-      updatedAt: new Date().toISOString(),
-    };
+      filename: req.body.filename || req.file?.originalname || 'silverstone_stint1_telemetry.csv',
+    });
 
-    return sendSuccess(res, 200, currentLapSession, 'Lap telemetry correlation completed');
+    return sendSuccess(
+      res,
+      200,
+      {
+        lapStats,
+        correlation,
+        session,
+        lapsLoaded: laps.length,
+        currentLap: laps[laps.length - 1].lap,
+      },
+      'Lap telemetry correlation completed'
+    );
   } catch (error) {
     next(error);
   } finally {
@@ -127,10 +148,20 @@ const analyzeLaps = async (req, res, next) => {
  */
 const getSession = async (req, res, next) => {
   try {
-    if (!currentLapSession) {
-      initDefaultSession();
-    }
-    return sendSuccess(res, 200, currentLapSession, 'Current lap session retrieved');
+    const session = sessionService.getSession();
+    return sendSuccess(
+      res,
+      200,
+      {
+        id: session.sessionId,
+        filename: session.lapFilename || 'silverstone_stint1_telemetry.csv',
+        lapStats: session.lapStats,
+        correlation: session.correlation,
+        session,
+        updatedAt: session.updatedAt,
+      },
+      'Current lap session retrieved'
+    );
   } catch (error) {
     next(error);
   }

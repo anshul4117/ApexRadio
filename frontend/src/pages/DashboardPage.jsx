@@ -54,10 +54,14 @@ const formatSec = (sec) => {
 
 export const DashboardPage = () => {
   const { currentAnalysis, history, isAnalyzing } = useRadio();
-  const { lapStats, correlation, refreshSession } = useLap();
+  const { lapStats, correlation, refreshSession, lapsLoaded, currentLap, currentSession } = useLap();
   const { activeAlertsCount } = useAlerts();
   const { isDemoMode, isLiveDemoRunning, startLiveDemo, stopLiveDemo } = useDemo();
   const [isAcked, setIsAcked] = useState(false);
+
+  const activeDriverName = currentAnalysis?.driver || currentSession?.driverName || 'Max Verstappen';
+  const activeCurrentLap = currentLap || currentSession?.currentLap || 18;
+  const activeTotalLaps = lapsLoaded || currentSession?.totalLaps || 18;
 
   const emotion = currentAnalysis?.emotion || {
     driverState: 'Stressed',
@@ -121,7 +125,9 @@ export const DashboardPage = () => {
               {isElevated ? 'High Acoustic Stress' : isFatigued ? 'Fatigue Detected' : 'Nominal Baseline'}
             </StatusBadge>
             <span className="text-zinc-400 dark:text-zinc-600 hidden sm:inline">|</span>
-            <span className="text-xs text-zinc-500 font-mono hidden sm:inline">Silverstone GP · Lap 18/52</span>
+            <span className="text-xs text-zinc-500 font-mono hidden sm:inline">
+              Silverstone GP · Lap {activeCurrentLap}/{activeTotalLaps} ({activeDriverName})
+            </span>
           </div>
         }
         actions={

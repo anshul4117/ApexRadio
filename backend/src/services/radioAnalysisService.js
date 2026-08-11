@@ -2,7 +2,7 @@ const fs = require('fs');
 const envConfig = require('../config/env.config');
 const speechToTextService = require('./speechToTextService');
 const emotionDetectionService = require('./emotionDetectionService');
-const huggingFaceClient = require('./huggingFaceClient');
+const sessionService = require('./sessionService');
 const logger = require('../utils/logger.util');
 
 // In-memory analysis session history
@@ -40,9 +40,9 @@ const analysisHistory = [
       audioFormat: 'WAV',
       fileSizeKb: 148,
       originalName: 'lap18_ver_understeer.wav',
-      sttModel: envConfig.hfSttModel,
+      sttModel: envConfig.groqSttModel || 'whisper-large-v3',
       emotionModel: envConfig.hfEmotionModel,
-      inferenceProvider: huggingFaceClient.hasApiKey() ? 'Hugging Face API' : 'Domain Acoustic Engine',
+      inferenceProvider: 'Groq (Whisper Large v3)',
     },
     processingTime: '1.14s',
   },
@@ -50,7 +50,7 @@ const analysisHistory = [
 
 class RadioAnalysisService {
   /**
-   * Process and analyze an audio file or sample preset through Hugging Face STT + Emotion Pipeline
+   * Process and analyze an audio file or sample preset through STT + Emotion Pipeline
    * @param {Object} file - Multer uploaded file object (optional)
    * @param {Object} [params] - Additional parameters (driver, lap, sampleHint)
    * @returns {Promise<Object>}
@@ -63,7 +63,7 @@ class RadioAnalysisService {
     logger.info(`[RadioAnalysis] Executing STT + Emotion pipeline for: ${file?.originalname || sampleHint || 'audio stream'}`);
 
     try {
-      // 1. Run Hugging Face Speech To Text on the uploaded audio file
+      // 1. Run Speech To Text (Groq Whisper Large v3) on uploaded audio file
       const sttResult = await speechToTextService.transcribeAudio(filePath, {
         sampleHint,
         originalName: file?.originalname || null,
@@ -83,7 +83,6 @@ class RadioAnalysisService {
       const elapsedSeconds = Math.round((Date.now() - startTime) / 10) / 100;
       const processingTimeStr = `${Math.max(0.85, elapsedSeconds)}s`;
       const audioDurationStr = `${sttResult.durationSeconds || 4.2}s`;
-      const hasKey = huggingFaceClient.hasApiKey();
 
       const record = {
         id: `tx_${Date.now()}`,
@@ -115,6 +114,18 @@ class RadioAnalysisService {
         },
         processingTime: processingTimeStr,
       };
+
+      // Synchronize into unified race session state
+      const unifiedSession = sessionService.updateRadioData({
+        transcript: record.transcript,
+        emotion: record.emotion,
+        confidence: record.confidence,
+        driverName: record.driver,
+        lap: record.lap,
+        recommendation: record.recommendation,
+      });
+
+      record.session = unifiedSession;
 
       // Prepend to session history
       analysisHistory.unshift(record);
