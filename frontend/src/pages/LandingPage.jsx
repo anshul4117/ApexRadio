@@ -19,6 +19,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import StatusBadge from '../components/ui/StatusBadge';
+import InteractiveTelemetryGrid from '../components/ui/InteractiveTelemetryGrid';
 
 export const LandingPage = () => {
   const pipelineSteps = [
@@ -31,7 +32,7 @@ export const LandingPage = () => {
     {
       step: '02',
       title: 'Speech-to-Text',
-      desc: 'Hugging Face Whisper STT transcribes cockpit speech with motorsport domain vocabulary.',
+      desc: 'Groq Whisper Large v3 LPU transcribes cockpit speech with motorsport domain accuracy in sub-seconds.',
       icon: Radio,
     },
     {
@@ -63,7 +64,7 @@ export const LandingPage = () => {
     },
     {
       title: 'Live Radio Speech Transcription',
-      desc: 'Transcribes high-speed team communications into text with sector tags and timecodes.',
+      desc: 'Transcribes high-speed team communications into text with sector tags and timecodes using Groq LPU.',
       icon: Radio,
       badge: 'Whisper Large v3',
     },
@@ -94,42 +95,45 @@ export const LandingPage = () => {
   ];
 
   return (
-    <div className="space-y-24 py-6 sm:py-12">
-      
+    <div className="relative space-y-16 sm:space-y-24 py-4 sm:py-12 overflow-x-hidden">
+      {/* Interactive Telemetry Grid Background with Cursor Tracking Glow */}
+      <InteractiveTelemetryGrid />
+
       {/* 1. HERO SECTION (15-Second Pitch) */}
-      <section className="relative text-center max-w-4xl mx-auto space-y-6 pt-4">
+      <section className="relative z-10 text-center max-w-4xl mx-auto space-y-6 pt-2 sm:pt-4 px-2 sm:px-0">
         
         {/* Hackathon Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs font-medium text-zinc-700 dark:text-zinc-300 shadow-2xs">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/90 dark:bg-zinc-900/80 backdrop-blur-xs text-xs font-medium text-zinc-700 dark:text-zinc-300 shadow-2xs">
           <StatusBadge status="live" size="sm" dot>Pit Wall AI Intelligence</StatusBadge>
           <span className="text-zinc-400">·</span>
-          <span>Formula 1 Telemetry Decision Support</span>
+          <span className="hidden sm:inline">Formula 1 Telemetry Decision Support</span>
+          <span className="sm:hidden">F1 Telemetry AI</span>
         </div>
 
         {/* Hero Title */}
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-zinc-950 dark:text-white leading-[1.1]">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-950 dark:text-white leading-[1.15]">
           ApexRadio <span className="text-zinc-400 font-normal">AI</span>
-          <span className="block text-2xl sm:text-3xl font-medium text-zinc-600 dark:text-zinc-400 mt-2">
+          <span className="block text-xl sm:text-2xl md:text-3xl font-medium text-zinc-600 dark:text-zinc-400 mt-2">
             The Silent Co-Driver for Race Engineers
           </span>
         </h1>
 
         {/* 1-Line Value Proposition */}
-        <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-base md:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed px-2">
           AI-powered pit wall intelligence that analyzes driver radio communications, detects vocal stress spikes, correlates tension with lap time loss, and provides tactical decision support in real time.
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <Link to="/dashboard">
-            <Button variant="primary" size="lg" className="gap-2 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 max-w-md sm:max-w-none mx-auto">
+          <Link to="/dashboard" className="w-full sm:w-auto">
+            <Button variant="primary" size="lg" className="w-full sm:w-auto justify-center gap-2 shadow-xs min-h-[44px]">
               Enter Pit Wall Console
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
 
-          <Link to="/architecture">
-            <Button variant="outline" size="lg" className="gap-2">
+          <Link to="/architecture" className="w-full sm:w-auto">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto justify-center gap-2 min-h-[44px]">
               <Cpu className="w-4 h-4 text-zinc-500" />
               View System Architecture
             </Button>
@@ -137,9 +141,9 @@ export const LandingPage = () => {
         </div>
 
         {/* Live Race Preview Snapshot */}
-        <div className="pt-6">
-          <div className="max-w-2xl mx-auto p-4 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md text-left shadow-lg space-y-3">
-            <div className="flex items-center justify-between text-xs pb-2 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="pt-4 sm:pt-6">
+          <div className="max-w-2xl mx-auto p-4 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md text-left shadow-lg space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs pb-2 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-zinc-950 dark:text-white">Silverstone GP · Lap 18/52</span>
                 <Badge variant="outline" size="sm">Car #1 VER</Badge>
@@ -147,11 +151,11 @@ export const LandingPage = () => {
               <StatusBadge status="critical" size="sm">Driver Stressed (78%)</StatusBadge>
             </div>
 
-            <p className="text-xs text-zinc-800 dark:text-zinc-200 pl-3 border-l-2 border-zinc-950 dark:border-white italic leading-relaxed">
+            <p className="text-xs text-zinc-800 dark:text-zinc-200 pl-3 border-l-2 border-rose-500 dark:border-rose-400 italic leading-relaxed">
               "Front left is completely gone guys, massive understeer in Turn 4, I cannot rotate the car."
             </p>
 
-            <div className="flex flex-wrap items-center justify-between text-[11px] text-zinc-500 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-500 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
               <span>Pace Loss: <strong className="text-rose-600 dark:text-rose-400 font-tabular">+0.84s</strong></span>
               <span>Risk Score: <strong className="text-rose-600 dark:text-rose-400 font-tabular">61% (High)</strong></span>
               <span className="font-medium text-zinc-900 dark:text-white">Directive: Enforce Radio Silence in S2</span>
@@ -162,10 +166,10 @@ export const LandingPage = () => {
       </section>
 
       {/* 2. THE PROBLEM SECTION */}
-      <section className="max-w-4xl mx-auto space-y-8">
+      <section className="relative z-10 max-w-4xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
         <div className="text-center space-y-2">
           <Badge variant="neutral" size="sm">The Challenge</Badge>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
             Why Race Engineers Miss Critical Emotional Cues
           </h2>
           <p className="text-xs text-zinc-500 max-w-lg mx-auto">
@@ -195,10 +199,10 @@ export const LandingPage = () => {
       </section>
 
       {/* 3. THE SOLUTION WORKFLOW */}
-      <section className="max-w-5xl mx-auto space-y-8">
+      <section className="relative z-10 max-w-5xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
         <div className="text-center space-y-2">
           <Badge variant="white" size="sm">End-to-End Pipeline</Badge>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
             From Noisy Radio to Tactical Pit Decisions
           </h2>
           <p className="text-xs text-zinc-500 max-w-lg mx-auto">
@@ -226,10 +230,10 @@ export const LandingPage = () => {
       </section>
 
       {/* 4. KEY FEATURES GRID */}
-      <section className="max-w-5xl mx-auto space-y-8">
+      <section className="relative z-10 max-w-5xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
         <div className="text-center space-y-2">
           <Badge variant="neutral" size="sm">Capabilities</Badge>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
             Built for Formula Race Engineers
           </h2>
           <p className="text-xs text-zinc-500 max-w-lg mx-auto">
@@ -260,35 +264,35 @@ export const LandingPage = () => {
       </section>
 
       {/* 5. ARCHITECTURE PREVIEW */}
-      <section className="max-w-4xl mx-auto space-y-6">
+      <section className="relative z-10 max-w-4xl mx-auto space-y-6 px-2 sm:px-0">
         <div className="text-center space-y-2">
           <Badge variant="white" size="sm">System Architecture</Badge>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
             Modular, Resilient & Real-Time
           </h2>
         </div>
 
-        <Card className="p-6 text-center space-y-4">
+        <Card className="p-4 sm:p-6 text-center space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1">
+            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1 text-left sm:text-center">
               <span className="font-semibold text-zinc-950 dark:text-white block">React 18 + Vite</span>
               <p className="text-zinc-500 text-[11px]">Recharts Telemetry, ThemeProvider, Context State Architecture</p>
             </div>
 
-            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1">
+            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1 text-left sm:text-center">
               <span className="font-semibold text-zinc-950 dark:text-white block">Express 4 + Multer</span>
               <p className="text-zinc-500 text-[11px]">Modular Service Layer, In-Memory Telemetry & JWT Auth</p>
             </div>
 
-            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1">
-              <span className="font-semibold text-zinc-950 dark:text-white block">Hugging Face API</span>
-              <p className="text-zinc-500 text-[11px]">Whisper Large v3 (STT) + DistilRoBERTa Emotion Classifier</p>
+            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1 text-left sm:text-center">
+              <span className="font-semibold text-zinc-950 dark:text-white block">Groq + Hugging Face</span>
+              <p className="text-zinc-500 text-[11px]">Groq Whisper Large v3 (STT) + DistilRoBERTa Emotion Engine</p>
             </div>
           </div>
 
           <div className="pt-2">
             <Link to="/architecture">
-              <Button variant="secondary" size="sm" className="gap-1.5">
+              <Button variant="secondary" size="sm" className="gap-1.5 min-h-[40px]">
                 Explore Complete Architecture Breakdown <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </Link>
@@ -297,10 +301,10 @@ export const LandingPage = () => {
       </section>
 
       {/* 6. CALL TO ACTION */}
-      <section className="max-w-3xl mx-auto text-center p-8 sm:p-12 rounded-2xl bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 space-y-6 shadow-xl">
+      <section className="relative z-10 max-w-3xl mx-auto text-center p-6 sm:p-12 rounded-2xl bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 space-y-6 shadow-xl mx-2 sm:mx-auto">
         <div className="space-y-2">
           <Badge variant="white" size="sm">Hackathon Ready</Badge>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             Ready to Experience the Pit Wall Control Room?
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 dark:text-zinc-600 max-w-md mx-auto leading-relaxed">
@@ -309,8 +313,8 @@ export const LandingPage = () => {
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link to="/dashboard">
-            <Button variant="primary" size="md" className="gap-2 bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white hover:opacity-90">
+          <Link to="/dashboard" className="w-full sm:w-auto">
+            <Button variant="primary" size="md" className="w-full sm:w-auto justify-center gap-2 bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white hover:opacity-90 min-h-[44px]">
               Launch Console (Demo Mode Pre-loaded) <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>

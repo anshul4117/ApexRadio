@@ -81,7 +81,8 @@ export const TopHeader = ({ onMobileMenuToggle }) => {
             title="Simulate complete 60-second live race sequence for judges"
           >
             <Play className="w-3 h-3 fill-current" />
-            <span>{isLiveDemoRunning ? 'Stop Live Demo' : 'Run Live Demo'}</span>
+            <span className="hidden sm:inline">{isLiveDemoRunning ? 'Stop Live Demo' : 'Run Live Demo'}</span>
+            <span className="sm:hidden">{isLiveDemoRunning ? 'Stop' : 'Live'}</span>
           </button>
 
           {/* Demo Mode Toggle Button */}
