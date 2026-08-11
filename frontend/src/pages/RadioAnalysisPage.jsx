@@ -27,8 +27,6 @@ import SectionHeader from '../components/ui/SectionHeader';
 import AudioWaveformVisualizer from '../components/ui/AudioWaveformVisualizer';
 import ExplainabilityPanel from '../components/ui/ExplainabilityPanel';
 import AudioVerificationCard from '../components/ui/AudioVerificationCard';
-import DemoFlowStepper from '../components/ui/DemoFlowStepper';
-import EngineeringEmptyState from '../components/ui/EngineeringEmptyState';
 import { useRadio } from '../context/RadioContext';
 import { useLap } from '../context/LapContext';
 import { useTypewriter } from '../hooks/useTypewriter';
@@ -66,7 +64,6 @@ export const RadioAnalysisPage = () => {
   const [audioDragOver, setAudioDragOver] = useState(false);
   const [csvDragOver, setCsvDragOver] = useState(false);
   const [csvSuccessMessage, setCsvSuccessMessage] = useState(null);
-  const [showEmptyState, setShowEmptyState] = useState(false);
 
   const audioFileInputRef = useRef(null);
   const csvFileInputRef = useRef(null);
@@ -123,7 +120,6 @@ export const RadioAnalysisPage = () => {
 
   // 1-Click Judge Demo Handler
   const handle1ClickJudgeDemo = async () => {
-    setShowEmptyState(false);
     await Promise.all([
       analyzePreset(samplePresets[0]),
       loadSamplePreset(),
@@ -134,7 +130,6 @@ export const RadioAnalysisPage = () => {
   const handleAudioFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setShowEmptyState(false);
       analyzeFile(file);
     }
   };
@@ -144,7 +139,6 @@ export const RadioAnalysisPage = () => {
     setAudioDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      setShowEmptyState(false);
       analyzeFile(file);
     }
   };
@@ -153,7 +147,6 @@ export const RadioAnalysisPage = () => {
   const handleCsvFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setShowEmptyState(false);
       const res = await uploadCsv(file);
       if (res?.success) {
         setCsvSuccessMessage(`Successfully loaded ${res.data?.lapsLoaded || res.data?.lapStats?.totalLaps || '18'} laps.`);
@@ -167,7 +160,6 @@ export const RadioAnalysisPage = () => {
     setCsvDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      setShowEmptyState(false);
       const res = await uploadCsv(file);
       if (res?.success) {
         setCsvSuccessMessage(`Successfully loaded ${res.data?.lapsLoaded || res.data?.lapStats?.totalLaps || '18'} laps.`);
@@ -195,9 +187,6 @@ export const RadioAnalysisPage = () => {
   const isElevated = emotion.driverState === 'Stressed' || (emotion.stressScore || 0) >= 75;
   const isFatigued = emotion.driverState === 'Fatigued';
 
-  // Determine active stepper step (1, 2, 3, or 4)
-  const currentStep = isAnalyzing ? 3 : (uploadedAudioFile || currentAnalysis) && lapStats ? 4 : uploadedAudioFile || currentAnalysis ? 2 : 1;
-
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       
@@ -216,66 +205,28 @@ export const RadioAnalysisPage = () => {
           </div>
         }
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 flex-nowrap">
             <Button
               variant="primary"
               size="sm"
               onClick={handle1ClickJudgeDemo}
-              className="gap-1.5 shadow-sm"
+              className="gap-1.5 shadow-sm whitespace-nowrap"
             >
               <Play className="w-3.5 h-3.5 fill-current text-white" />
               <span>⚡ 1-Click Judge Demo</span>
             </Button>
             <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => audioFileInputRef.current?.click()}
-              className="gap-1.5"
-            >
-              <UploadCloud className="w-3.5 h-3.5 text-zinc-500" />
-              Upload Audio
-            </Button>
-            <Button
               variant="outline"
               size="sm"
-              onClick={() => csvFileInputRef.current?.click()}
-              className="gap-1.5"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-500" />
-              Upload Lap CSV
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                resetAnalysisState();
-                setShowEmptyState(!showEmptyState);
-              }}
-              className="gap-1.5"
+              onClick={resetAnalysisState}
+              className="gap-1.5 whitespace-nowrap"
             >
               <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
-              {showEmptyState ? 'Hide Guide' : 'Show Guide'}
+              <span>Reset State</span>
             </Button>
           </div>
         }
       />
-
-      {/* 1. GUIDED 4-STEP DEMO FLOW STEPPER */}
-      <DemoFlowStepper
-        currentStep={currentStep}
-        hasAudio={Boolean(uploadedAudioFile || currentAnalysis)}
-        hasCsv={Boolean(lapStats)}
-        isAnalyzing={isAnalyzing || isLapAnalyzing}
-      />
-
-      {/* Optional Formula 1 Technical Empty State Guide */}
-      {showEmptyState && (
-        <EngineeringEmptyState
-          on1ClickDemo={handle1ClickJudgeDemo}
-          onSelectAudioPreset={() => analyzePreset(samplePresets[0])}
-          onLoadCsvPreset={loadSamplePreset}
-        />
-      )}
 
       {/* Hidden File Inputs */}
       <input

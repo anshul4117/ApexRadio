@@ -358,7 +358,7 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* 4. MAIN HERO CORRELATION CHART & RECENT RADIO FEED */}
+      {/* 4. MAIN HERO CORRELATION CHART & DECISION METRICS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left 2-Cols: Hero Correlation Recharts Canvas */}
@@ -367,72 +367,10 @@ export const DashboardPage = () => {
             correlation={correlation}
             lapStats={lapStats}
           />
-
-          {/* Live Radio Transmissions Feed */}
-          <Card
-            title="Cockpit Voice Transmissions"
-            subtitle="Real-time radio transcription powered by Groq Whisper Large v3"
-            action={<Badge variant="neutral" size="sm">Channel 1 Live</Badge>}
-            footer={
-              <div className="flex items-center justify-between text-xs text-zinc-500">
-                <span>{history.length} transmission(s) analyzed in current session</span>
-                <Link to="/dashboard/radio" className="text-zinc-900 dark:text-zinc-100 hover:underline font-medium">
-                  Open Voice Analyzer →
-                </Link>
-              </div>
-            }
-          >
-            <div className="space-y-3">
-              {history.map((tx) => {
-                const txElevated = tx.emotion?.driverState === 'Stressed' || (tx.emotion?.stressScore || 0) >= 75;
-                const txFatigued = tx.emotion?.driverState === 'Fatigued';
-
-                return (
-                  <div
-                    key={tx.id}
-                    className="p-4 rounded-xl bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60 space-y-2.5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all card-hover-lift"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Volume2 className="w-4 h-4 text-zinc-400" />
-                        <span className="font-semibold text-xs text-zinc-950 dark:text-white">
-                          {tx.driver} ({tx.car || 'Car #1'})
-                        </span>
-                        <Badge variant="outline" size="sm">Lap {tx.lap || activeCurrentLap}</Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-zinc-400 text-xs font-tabular font-mono">
-                          {new Date(tx.timestamp).toLocaleTimeString()}
-                        </span>
-                        <StatusBadge
-                          status={txElevated ? 'critical' : txFatigued ? 'fatigued' : 'nominal'}
-                          size="sm"
-                        >
-                          Stress {tx.emotion?.stressScore || 50}% · {tx.emotion?.driverState || 'Nominal'}
-                        </StatusBadge>
-                      </div>
-                    </div>
-
-                    <p className="text-zinc-800 dark:text-zinc-200 text-sm pl-3.5 border-l-2 border-zinc-900 dark:border-zinc-100 leading-relaxed italic">
-                      "{tx.transcript}"
-                    </p>
-
-                    <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 pt-1 border-t border-zinc-200/40 dark:border-zinc-800/40">
-                      <span>Pitch: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.emotion?.pitchJitter || '+12.0 Hz'}</strong></span>
-                      <span>Cadence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.emotion?.speechCadence || '140 WPM'}</strong></span>
-                      <span>Confidence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.confidence || 96.8}%</strong></span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
         </div>
 
-        {/* Right 1-Col: Telemetry Anomalies & Explainability Breakdown */}
+        {/* Right 1-Col: Quick Correlation Decision Metrics Panel */}
         <div className="space-y-6">
-          
-          {/* Quick Correlation Metrics Panel */}
           <Card
             title="Correlation Breakdown"
             subtitle="Grand Prix Decision Metrics"
@@ -447,39 +385,98 @@ export const DashboardPage = () => {
                   {correlation?.correlationLevel || 'High'} Correlation
                 </span>
                 <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  Driver stress increase (+42.5 Hz jitter) directly matches pace drop of {correlation?.performanceDegradationStr || '+1.58 s/lap'}.
+                  Driver stress increase ({emotion?.pitchJitter || '+42.5 Hz'} jitter) directly matches pace drop of {correlation?.performanceDegradationStr || '+1.43 s/lap'}.
                 </p>
               </div>
 
               <div className="space-y-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
                 <div className="flex justify-between items-center text-zinc-500">
                   <span>Pre-Stress Pace:</span>
-                  <span className="font-mono font-medium text-emerald-500">{correlation?.avgBeforeStressTime || '1:29.540'}</span>
+                  <span className="font-mono font-medium text-emerald-500">{correlation?.avgBeforeStressTime || '1:29.813'}</span>
                 </div>
                 <div className="flex justify-between items-center text-zinc-500">
                   <span>Post-Stress Pace:</span>
-                  <span className="font-mono font-medium text-rose-500">{correlation?.avgAfterStressTime || '1:31.120'}</span>
+                  <span className="font-mono font-medium text-rose-500">{correlation?.avgAfterStressTime || '1:31.240'}</span>
                 </div>
                 <div className="flex justify-between items-center text-zinc-500">
                   <span>Pace Loss %:</span>
-                  <span className="font-mono font-medium text-rose-500">{correlation?.paceLossPercentageStr || '+1.76%'}</span>
+                  <span className="font-mono font-medium text-rose-500">{correlation?.paceLossPercentageStr || '+1.59%'}</span>
                 </div>
               </div>
             </div>
           </Card>
-
-          {/* AI Decision Explainability Section */}
-          <ExplainabilityPanel
-            recommendation={correlation?.recommendation || currentAnalysis?.recommendation}
-            emotion={emotion}
-            lapStats={lapStats}
-            correlation={correlation}
-            transcript={currentAnalysis?.transcript}
-          />
-
         </div>
 
       </div>
+
+      {/* 5. LIVE RADIO TRANSMISSIONS FEED */}
+      <Card
+        title="Cockpit Voice Transmissions"
+        subtitle="Real-time radio transcription powered by Groq Whisper Large v3"
+        action={<Badge variant="neutral" size="sm">Channel 1 Live</Badge>}
+        footer={
+          <div className="flex items-center justify-between text-xs text-zinc-500">
+            <span>{history.length} transmission(s) analyzed in current session</span>
+            <Link to="/dashboard/radio" className="text-zinc-900 dark:text-zinc-100 hover:underline font-medium">
+              Open Voice Analyzer →
+            </Link>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          {history.map((tx) => {
+            const txElevated = tx.emotion?.driverState === 'Stressed' || (tx.emotion?.stressScore || 0) >= 75;
+            const txFatigued = tx.emotion?.driverState === 'Fatigued';
+
+            return (
+              <div
+                key={tx.id}
+                className="p-4 rounded-xl bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60 space-y-2.5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all card-hover-lift"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-zinc-400" />
+                    <span className="font-semibold text-xs text-zinc-950 dark:text-white">
+                      {tx.driver} ({tx.car || 'Car #1'})
+                    </span>
+                    <Badge variant="outline" size="sm">Lap {tx.lap || activeCurrentLap}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-400 text-xs font-tabular font-mono">
+                      {new Date(tx.timestamp).toLocaleTimeString()}
+                    </span>
+                    <StatusBadge
+                      status={txElevated ? 'critical' : txFatigued ? 'fatigued' : 'nominal'}
+                      size="sm"
+                    >
+                      Stress {tx.emotion?.stressScore || 50}% · {tx.emotion?.driverState || 'Nominal'}
+                    </StatusBadge>
+                  </div>
+                </div>
+
+                <p className="text-zinc-800 dark:text-zinc-200 text-sm pl-3.5 border-l-2 border-zinc-900 dark:border-zinc-100 leading-relaxed italic">
+                  "{tx.transcript}"
+                </p>
+
+                <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 pt-1 border-t border-zinc-200/40 dark:border-zinc-800/40">
+                  <span>Pitch: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.emotion?.pitchJitter || '+12.0 Hz'}</strong></span>
+                  <span>Cadence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.emotion?.speechCadence || '140 WPM'}</strong></span>
+                  <span>Confidence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.confidence || 96.8}%</strong></span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* 6. AI DECISION EXPLAINABILITY & ROOT CAUSE ATTRIBUTION (Full Width) */}
+      <ExplainabilityPanel
+        recommendation={correlation?.recommendation || currentAnalysis?.recommendation}
+        emotion={emotion}
+        lapStats={lapStats}
+        correlation={correlation}
+        transcript={currentAnalysis?.transcript}
+      />
 
     </div>
   );

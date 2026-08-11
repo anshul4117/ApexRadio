@@ -23,12 +23,24 @@ export const ExplainabilityPanel = ({
   transcript,
   className = '',
 }) => {
-  const stressScore = emotion?.stressScore || 78;
-  const driverState = emotion?.driverState || 'Stressed';
-  const confidence = emotion?.confidence || 94.2;
-  const paceLoss = correlation?.paceLossSeconds || '0.84';
+  const stressScore = emotion?.stressScore || correlation?.stressScore || 78;
+  const driverState = emotion?.driverState || correlation?.driverState || 'Stressed';
+  const confidence = correlation?.confidence || emotion?.confidence || 94.2;
+  const degradationStr = correlation?.performanceDegradationStr || '+1.43 s/lap';
+  const paceLossStr = correlation?.paceLossPercentageStr || '+1.59%';
   const riskScore = correlation?.riskScore || 61;
   const riskTier = correlation?.riskTier || 'High';
+  const stressLap = correlation?.stressLap || 18;
+
+  const activeAction =
+    recommendation?.action ||
+    correlation?.recommendation?.action ||
+    'Driver stress is affecting pace. Consider reducing radio traffic and evaluating tire condition.';
+
+  const activeCategory =
+    recommendation?.category ||
+    correlation?.recommendation?.category ||
+    'Radio Brevity & Pit Protocol';
 
   const weights = [
     {
@@ -41,16 +53,16 @@ export const ExplainabilityPanel = ({
     {
       label: 'Lap Pace Degradation Trend',
       weight: 30,
-      value: `+${paceLoss}s / lap (Worsening)`,
+      value: `${degradationStr} (${paceLossStr})`,
       severity: 'critical',
       color: 'bg-rose-500',
     },
     {
       label: 'Consecutive Radio Stress Events',
       weight: 20,
-      value: '2 Spikes in Stint (Laps 16 & 18)',
+      value: `Spike at Lap ${stressLap}`,
       severity: 'critical',
-      color: 'bg-amber-400',
+      color: 'bg-amber-500',
     },
     {
       label: 'Session Strategy & Undercut Window',
@@ -64,25 +76,25 @@ export const ExplainabilityPanel = ({
   const evidenceItems = [
     {
       title: 'Vocal Stress & Prosody Detected',
-      detail: `Pitch jitter shifted +42.5 Hz with speech cadence at 185 WPM (${confidence}% model confidence).`,
+      detail: `Pitch jitter shifted ${emotion?.pitchJitter || '+42.5 Hz'} with speech cadence at ${emotion?.speechCadence || '185 WPM'} (${confidence}% STT/emotion model confidence).`,
       status: 'critical',
       icon: Activity,
     },
     {
       title: 'Sector 2 Apex Exit Degradation',
-      detail: `Lap time slowed to 1:31.240 (+1.82s vs stint best), with Sector 2 degraded by +0.51s due to Turn 4 understeer.`,
+      detail: `Lap pace slowed to ${correlation?.avgAfterStressTime || '1:31.240'} (${degradationStr} delta), with post-stress tire temperature spike on Lap ${stressLap}.`,
       status: 'critical',
       icon: TrendingDown,
     },
     {
       title: 'Consecutive Stressed Transmission History',
-      detail: `Driver reported traffic on Lap 16 followed by severe front-left slip on Lap 18.`,
+      detail: `Driver reported "${transcript || 'The rear tires are overheating.'}" at Lap ${stressLap}, confirming aerodynamic grip loss.`,
       status: 'nominal',
       icon: Volume2,
     },
     {
       title: 'Composite Risk Escalation Threshold',
-      detail: `Performance Risk Score reached ${riskScore}% (${riskTier} Tier), triggering automated pit directive.`,
+      detail: `Performance Risk Score reached ${riskScore}% (${riskTier} Tier), triggering automated pit wall strategy directive.`,
       status: 'critical',
       icon: Gauge,
     },
@@ -95,90 +107,94 @@ export const ExplainabilityPanel = ({
       action={<Badge variant="white" size="sm">Explainable AI</Badge>}
       className={className}
     >
-      <div className="space-y-6">
+      <div className="space-y-5">
         
         {/* Recommendation Directive Banner */}
-        <div className="p-4 rounded-lg bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 space-y-2 shadow-2xs">
-          <div className="flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 space-y-2 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-rose-400 dark:text-rose-600 flex-shrink-0" />
-              <span className="font-semibold text-xs">
-                ACTIONABLE DIRECTIVE: {recommendation?.category || 'Radio Brevity & Pit Protocol'}
+              <span className="font-bold text-xs uppercase tracking-wide">
+                ACTIONABLE DIRECTIVE: {activeCategory}
               </span>
             </div>
             <StatusBadge status="critical" size="sm">
               Risk Score {riskScore}%
             </StatusBadge>
           </div>
-          <p className="text-xs leading-relaxed opacity-95 pl-6 font-normal">
-            "{recommendation?.action || 'Enforce radio silence through Sector 2 high-G corners and prepare Lap 21 pit window for Hard compound.'}"
+          <p className="text-xs sm:text-sm leading-relaxed opacity-95 pl-6 font-normal italic">
+            "{activeAction}"
           </p>
         </div>
 
         {/* 2-Column: Multi-Factor Weighted Breakdown + Evidence List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 text-xs">
           
           {/* Left: Weighted Decision Breakdown with Animated Progress Bars */}
-          <div className="space-y-3 p-4 rounded-lg bg-zinc-50/70 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800">
-              <span className="font-semibold text-zinc-950 dark:text-white flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                Decision Weight Attribution
-              </span>
-              <span className="text-[11px] text-zinc-400">Total: 100%</span>
-            </div>
+          <div className="space-y-3 p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200/60 dark:border-zinc-800">
+                <span className="font-bold text-zinc-950 dark:text-white flex items-center gap-1.5 text-xs">
+                  <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                  Decision Weight Attribution
+                </span>
+                <span className="text-[11px] text-zinc-400 font-mono">Total: 100%</span>
+              </div>
 
-            <div className="space-y-3 pt-1">
-              {weights.map((w, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-zinc-600 dark:text-zinc-400 font-medium">
-                      {w.label} <strong className="text-zinc-900 dark:text-zinc-200">({w.weight}%)</strong>
-                    </span>
-                    <span className="font-medium text-zinc-950 dark:text-white font-tabular">
-                      {w.value}
-                    </span>
+              <div className="space-y-3.5 pt-3">
+                {weights.map((w, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex justify-between items-baseline text-[11px]">
+                      <span className="text-zinc-600 dark:text-zinc-400 font-medium truncate max-w-[200px] sm:max-w-none">
+                        {w.label} <strong className="text-zinc-900 dark:text-zinc-200 font-semibold">({w.weight}%)</strong>
+                      </span>
+                      <span className="font-bold text-zinc-950 dark:text-white font-mono text-[11px]">
+                        {w.value}
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-200/70 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${w.color} transition-all duration-700`}
+                        style={{ width: `${w.weight * 2.5}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${w.color} transition-all duration-700`}
-                      style={{ width: `${w.weight * 2.5}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Right: Itemized Telemetry Evidence List */}
-          <div className="space-y-3 p-4 rounded-lg bg-zinc-50/70 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 dark:border-zinc-800">
-              <span className="font-semibold text-zinc-950 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-                Root-Cause Telemetry Evidence
-              </span>
-              <Badge variant="outline" size="sm">4 Factors</Badge>
-            </div>
+          <div className="space-y-3 p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200/60 dark:border-zinc-800">
+                <span className="font-bold text-zinc-950 dark:text-white flex items-center gap-1.5 text-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                  Root-Cause Telemetry Evidence
+                </span>
+                <Badge variant="outline" size="sm">4 Factors</Badge>
+              </div>
 
-            <div className="space-y-2.5 pt-1">
-              {evidenceItems.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <div key={idx} className="flex items-start gap-2.5 text-[11px] leading-relaxed">
-                    <div className="w-4 h-4 rounded-full bg-zinc-200/60 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Icon className="w-2.5 h-2.5 text-zinc-600 dark:text-zinc-300" />
+              <div className="space-y-2.5 pt-3">
+                {evidenceItems.map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={idx} className="flex items-start gap-2.5 text-[11px] leading-relaxed">
+                      <div className="w-5 h-5 rounded-md bg-zinc-200/70 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
+                        <Icon className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                      </div>
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <span className="font-bold text-zinc-950 dark:text-white block truncate">
+                          {item.title}
+                        </span>
+                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                          {item.detail}
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-0.5 flex-1">
-                      <span className="font-semibold text-zinc-950 dark:text-white block">
-                        {item.title}
-                      </span>
-                      <p className="text-zinc-500 dark:text-zinc-400">
-                        {item.detail}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
