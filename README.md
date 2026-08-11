@@ -146,11 +146,11 @@ ApexRadio AI comes with a built-in **Demo Mode** toggle in the top header. When 
 
 ---
 
-## 🔮 Future Roadmap
+## 🤗 Acknowledgments & Credits
 
-1. **Live CAN Bus Hardware Gateway**: Real-time telemetry ingestion directly from car telemetry transmitters.
-2. **Multi-Car Fleet Monitoring**: Simultaneous multi-driver radio and acoustic load comparison across constructor teams.
-3. **Automated Radio Audio Suppression**: Dynamic hardware gating that physically mutes outgoing pit communications when telemetry registers braking > 4.5G.
+Special thanks to **[Hugging Face](https://huggingface.co/)** 🤗 for providing the state-of-the-art open-source AI infrastructure and model ecosystems that power the acoustic intelligence and natural language processing pipelines in ApexRadio AI:
+- **DistilRoBERTa Emotion Classifier** (`j-hartmann/emotion-english-distilroberta-base`): Real-time cognitive stress, sentiment, and emotional tone classification.
+- **Hugging Face Inference Providers & Transformers**: Scalable model execution and developer-first AI infrastructure.
 
 ---
 

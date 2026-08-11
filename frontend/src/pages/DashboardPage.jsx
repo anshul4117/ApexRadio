@@ -17,6 +17,10 @@ import {
   ShieldAlert,
   Sparkles,
   Play,
+  ArrowRight,
+  Radio,
+  Heart,
+  Mic,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -39,6 +43,7 @@ import { useLap } from '../context/LapContext';
 import { useAlerts } from '../context/AlertsContext';
 import { useDemo } from '../context/DemoContext';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
+import { StatCardSkeleton, ChartSkeleton } from '../components/ui/SkeletonLoader';
 
 const formatSec = (sec) => {
   if (!sec || isNaN(sec)) return '';
@@ -48,7 +53,7 @@ const formatSec = (sec) => {
 };
 
 export const DashboardPage = () => {
-  const { currentAnalysis, history } = useRadio();
+  const { currentAnalysis, history, isAnalyzing } = useRadio();
   const { lapStats, correlation, refreshSession } = useLap();
   const { activeAlertsCount } = useAlerts();
   const { isDemoMode, isLiveDemoRunning, startLiveDemo, stopLiveDemo } = useDemo();
@@ -57,6 +62,7 @@ export const DashboardPage = () => {
   const emotion = currentAnalysis?.emotion || {
     driverState: 'Stressed',
     stressScore: 78,
+    emotionLabel: 'Frustrated',
     pitchJitter: '+42.5 Hz',
     speechCadence: '185 WPM',
   };
@@ -76,24 +82,25 @@ export const DashboardPage = () => {
   const chartData = lapStats?.chartData || [];
 
   // Session Health status
-  const sessionHealth = isElevated ? 'Degraded (High Stress)' : 'Nominal (Pace Stable)';
+  const sessionHealth = isElevated ? 'Degraded (Stress High)' : isFatigued ? 'Fatigue Alert' : 'Nominal (Pace Stable)';
 
   const CustomChartTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="p-2.5 bg-zinc-950 text-white dark:bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl text-xs space-y-1">
-          <div className="font-semibold flex justify-between gap-3 border-b border-zinc-800 pb-1">
-            <span>Lap {label}</span>
-            <span className="font-tabular text-zinc-300">{data.lapTime}</span>
+        <div className="p-3 bg-zinc-950 text-white dark:bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl text-xs space-y-1.5 backdrop-blur-md">
+          <div className="font-semibold flex justify-between gap-4 border-b border-zinc-800 pb-1">
+            <span className="text-zinc-400">Lap {label}</span>
+            <span className="font-tabular text-white font-mono">{data.lapTime}</span>
           </div>
-          <div className="flex justify-between gap-3 text-[11px] text-zinc-400">
-            <span>Moving Avg:</span>
-            <span className="font-tabular text-white">{data.movingAvg}</span>
+          <div className="flex justify-between gap-4 text-[11px] text-zinc-400">
+            <span>5-Lap Moving Avg:</span>
+            <span className="font-tabular text-zinc-200 font-mono">{data.movingAvg}</span>
           </div>
           {data.stressEvent && (
-            <div className="text-[10px] text-rose-400 font-medium pt-0.5">
-              ⚠ {data.stressEvent}
+            <div className="text-[11px] text-rose-400 font-medium pt-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              {data.stressEvent}
             </div>
           )}
         </div>
@@ -103,20 +110,18 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      
-      {/* Section Header with Active Alert Counter, Demo Controls */}
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+      {/* Pit Wall Telemetry Top Control Header */}
       <SectionHeader
-        title="Pit Wall Control Center"
-        subtitle="Real-time driver acoustic stress monitoring, vehicle telemetry & tactical pit decisions"
+        title="Live Race Engineering Console"
+        subtitle="Real-time multi-modal acoustic biometrics, CAN bus telemetry correlation and autonomous strategy triggers"
         badge={
           <div className="flex items-center gap-2">
-            <StatusBadge status="live">Session Active</StatusBadge>
-            <Link to="/dashboard/alerts">
-              <Badge variant={activeAlertsCount > 0 ? 'danger' : 'neutral'} size="sm">
-                {activeAlertsCount} Active Alert{activeAlertsCount !== 1 ? 's' : ''}
-              </Badge>
-            </Link>
+            <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'fatigued' : 'nominal'} size="sm" dot>
+              {isElevated ? 'High Acoustic Stress' : isFatigued ? 'Fatigue Detected' : 'Nominal Baseline'}
+            </StatusBadge>
+            <span className="text-zinc-400 dark:text-zinc-600 hidden sm:inline">|</span>
+            <span className="text-xs text-zinc-500 font-mono hidden sm:inline">Silverstone GP · Lap 18/52</span>
           </div>
         }
         actions={
@@ -125,175 +130,263 @@ export const DashboardPage = () => {
               variant={isLiveDemoRunning ? 'danger' : 'primary'}
               size="sm"
               onClick={isLiveDemoRunning ? stopLiveDemo : startLiveDemo}
-              className="gap-1.5"
+              className="gap-1.5 shadow-sm"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              {isLiveDemoRunning ? 'Stop Live Demo' : 'Run 60s Live Race Demo'}
+              <span className="hidden sm:inline">{isLiveDemoRunning ? 'Stop Live Demo' : 'Run 60s Live Race Demo'}</span>
+              <span className="sm:hidden">{isLiveDemoRunning ? 'Stop Demo' : '60s Demo'}</span>
             </Button>
             <Button variant="secondary" size="sm" onClick={refreshSession} className="gap-1.5">
-              <RefreshCw className="w-3.5 h-3.5 text-zinc-500" /> Re-sync
+              <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="hidden sm:inline">Re-sync</span>
             </Button>
           </div>
         }
       />
 
-      {/* Top 4-Card Control Center HUD */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* PRIMARY HERO METRIC CARDS (Top Priority Hierarchy) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         
-        {/* 1. Driver Status Card (Calm / Stressed / Fatigued) */}
-        <Card
-          title="Driver Status"
-          subtitle="Biometric acoustic load"
-          badge={
-            <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'high-stress' : 'nominal'} size="sm">
-              {emotion.driverState || 'Stressed'}
-            </StatusBadge>
-          }
-        >
-          <div className="space-y-3">
-            <div className="flex items-baseline justify-between">
-              <span className={`text-3xl font-semibold tracking-tight font-tabular transition-colors duration-500 ${
-                isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-950 dark:text-white'
-              }`}>
-                {animatedStressScore}<span className="text-sm font-normal text-zinc-400">/100</span>
-              </span>
-              <span className={`text-xs font-medium flex items-center gap-0.5 ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500'}`}>
-                <TrendingUp className="w-3 h-3" /> {isElevated ? '+24% vs baseline' : 'Nominal baseline'}
-              </span>
+        {/* HERO CARD 1: Driver Status & Biometric Load */}
+        <div className="rounded-2xl border-2 border-zinc-900/10 dark:border-zinc-100/15 bg-gradient-to-b from-zinc-50/80 to-white dark:from-zinc-900/60 dark:to-[#0e0e11] p-5 shadow-sm space-y-4 relative overflow-hidden card-hover-lift">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs">
+                #1
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
+                  Driver Biometric Status
+                </h3>
+                <p className="text-[11px] text-zinc-500 font-mono">Max Verstappen · Car #1</p>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs text-zinc-500">
-                <span>Cognitive Stress Index</span>
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium">
-                  {isElevated ? 'Elevated' : isFatigued ? 'Moderate' : 'Nominal'}
+            <StatusBadge
+              status={isElevated ? 'critical' : isFatigued ? 'fatigued' : 'nominal'}
+              size="sm"
+            >
+              {emotion.driverState || 'Calm'}
+            </StatusBadge>
+          </div>
+
+          {/* Stress Score Gauge & Readout */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-baseline justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold block">
+                  Cognitive Stress Index
+                </span>
+                <span className={`text-4xl font-bold font-tabular tracking-tight transition-colors duration-500 ${
+                  isElevated ? 'text-rose-600 dark:text-rose-400' : isFatigued ? 'text-sky-600 dark:text-sky-400' : 'text-zinc-950 dark:text-white'
+                }`}>
+                  {animatedStressScore}<span className="text-base font-normal text-zinc-400">/100</span>
                 </span>
               </div>
-              <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${isElevated ? 'bg-rose-500' : 'bg-zinc-950 dark:bg-white'}`}
-                  style={{ width: `${animatedStressScore}%` }}
-                />
+
+              <div className="text-right">
+                <span className="text-[11px] text-zinc-400 block font-mono">Heart Rate Est.</span>
+                <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 font-tabular flex items-center justify-end gap-1">
+                  <Heart className={`w-3.5 h-3.5 ${isElevated ? 'text-rose-500 animate-ping' : 'text-zinc-400'}`} />
+                  {estimatedHR} BPM
+                </span>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex justify-between text-xs text-zinc-500">
-              <span>Heart Rate Est:</span>
-              <span className="font-medium text-zinc-900 dark:text-zinc-100 font-tabular">{estimatedHR} BPM</span>
+            {/* Dual Layer Progress Bar */}
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-200/50 dark:border-zinc-700/50">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  isElevated ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : isFatigued ? 'bg-sky-500' : 'bg-zinc-900 dark:bg-zinc-100'
+                }`}
+                style={{ width: `${animatedStressScore}%` }}
+              />
             </div>
           </div>
-        </Card>
 
-        {/* 2. Performance Risk Score Card (Correlation Engine) */}
-        <Card
-          title="Performance Risk Score"
-          subtitle="Telemetry & stress correlation"
-          badge={
-            <StatusBadge status={correlation?.riskBadgeVariant || (rawRiskScore >= 60 ? 'critical' : 'nominal')} size="sm">
-              {riskTier} Risk
-            </StatusBadge>
-          }
-        >
-          <div className="space-y-3">
-            <div className="flex items-baseline justify-between">
-              <span className={`text-3xl font-semibold tracking-tight font-tabular transition-colors duration-500 ${
-                rawRiskScore >= 60 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-950 dark:text-white'
-              }`}>
-                {animatedRiskScore}<span className="text-sm font-normal text-zinc-400">%</span>
-              </span>
-              <span className={`text-xs font-medium flex items-center gap-0.5 ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500'}`}>
-                <TrendingUp className="w-3 h-3" /> Rising (+39% stint drift)
+          {/* Acoustic Telemetry Breakdown Strip */}
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/80 text-xs">
+            <div className="p-2 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 space-y-0.5">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Pitch Jitter</span>
+              <span className={`font-semibold font-mono ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                {emotion.pitchJitter || '+42.5 Hz'}
               </span>
             </div>
+            <div className="p-2 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 space-y-0.5">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Speech Cadence</span>
+              <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">
+                {emotion.speechCadence || '185 WPM'}
+              </span>
+            </div>
+          </div>
+        </div>
 
-            <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Session Health:</span>
-                <span className={`font-medium ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                  {sessionHealth}
+        {/* HERO CARD 2: Performance Risk Score */}
+        <div className="rounded-2xl border-2 border-zinc-900/10 dark:border-zinc-100/15 bg-gradient-to-b from-zinc-50/80 to-white dark:from-zinc-900/60 dark:to-[#0e0e11] p-5 shadow-sm space-y-4 relative overflow-hidden card-hover-lift">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
+                <Gauge className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
+                  Performance Risk Score
+                </h3>
+                <p className="text-[11px] text-zinc-500 font-mono">Tire Deg + Stress Correlation</p>
+              </div>
+            </div>
+
+            <StatusBadge
+              status={rawRiskScore >= 60 ? 'critical' : rawRiskScore >= 40 ? 'fatigued' : 'nominal'}
+              size="sm"
+            >
+              {riskTier} Risk
+            </StatusBadge>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <div className="flex items-baseline justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold block">
+                  Aggregate Risk Index
+                </span>
+                <span className={`text-4xl font-bold font-tabular tracking-tight transition-colors duration-500 ${
+                  rawRiskScore >= 60 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-950 dark:text-white'
+                }`}>
+                  {animatedRiskScore}<span className="text-base font-normal text-zinc-400">%</span>
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Pace Degradation:</span>
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-tabular">
+
+              <div className="text-right">
+                <span className="text-[11px] text-zinc-400 block font-mono">Pace Degradation</span>
+                <span className="text-lg font-semibold text-rose-600 dark:text-rose-400 font-tabular font-mono">
                   {lapStats?.paceDeltaVsAvg || '+0.84s / lap'}
                 </span>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex justify-between text-xs text-zinc-500">
-              <span>Brake Stability:</span>
-              <span className={`font-medium ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                {isElevated ? 'Degrading' : 'Optimal'}
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-200/50 dark:border-zinc-700/50">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  rawRiskScore >= 60 ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-zinc-900 dark:bg-zinc-100'
+                }`}
+                style={{ width: `${animatedRiskScore}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/80 text-xs">
+            <div className="p-2 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 space-y-0.5">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Session Health</span>
+              <span className={`font-semibold truncate block ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                {sessionHealth}
+              </span>
+            </div>
+            <div className="p-2 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 space-y-0.5">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Tire Wear Delta</span>
+              <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">
+                -3.2% stint pace
               </span>
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* 3. Session & Lap Summary */}
-        <Card
-          title="Session & Pace Summary"
-          subtitle="Silverstone Grand Prix"
-          badge={<Badge variant="outline" size="sm">Lap {lapStats?.totalLaps || 18}/52</Badge>}
-        >
-          <div className="space-y-2.5 text-xs">
-            <div className="flex justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Fastest Stint Lap:</span>
-              <span className="font-medium text-zinc-950 dark:text-white font-tabular">
+        {/* HERO CARD 3: Secondary Session Context Stats */}
+        <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#0e0e11] p-5 shadow-sm space-y-4 md:col-span-2 lg:col-span-1 card-hover-lift">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center">
+                <Flag className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
+                  Stint Pace Telemetry
+                </h3>
+                <p className="text-[11px] text-zinc-500 font-mono">18 Laps · Soft Compound</p>
+              </div>
+            </div>
+
+            <Badge variant="outline" size="sm">Stint 1</Badge>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50 space-y-1">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">Fastest Lap</span>
+              <span className="text-xl font-bold font-mono text-zinc-900 dark:text-white">
                 {lapStats?.fastestLap?.lapTime || '1:29.420'}
               </span>
+              <span className="text-[10px] text-emerald-500 block font-medium">Purple Sector 1 & 3</span>
             </div>
-            <div className="flex justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Average Stint Pace:</span>
-              <span className="font-medium text-zinc-900 dark:text-zinc-100 font-tabular">
-                {lapStats?.averageLapTime || '1:30.120'}
-              </span>
-            </div>
-            <div className="flex justify-between text-xs text-zinc-500">
-              <span>Gap to P2: <strong className="text-zinc-900 dark:text-zinc-100 font-tabular">+1.420s (HAM)</strong></span>
-              <span className="text-zinc-800 dark:text-zinc-200 font-medium">Rain Threat 60%</span>
-            </div>
-          </div>
-        </Card>
 
-        {/* 4. Latest AI Recommendation */}
-        <Card
-          title="Latest AI Recommendation"
-          subtitle="Autonomous engineer decision"
-          badge={<StatusBadge status="strategy" size="sm">Tactical</StatusBadge>}
-        >
-          <div className="space-y-2.5 text-xs">
-            <div className="p-2.5 rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs leading-relaxed flex items-start gap-2 shadow-2xs">
-              <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-rose-400 dark:text-rose-600" />
-              <span>{correlation?.recommendation?.action || currentAnalysis?.recommendation?.action || 'Enforce radio silence through Sector 2 high-G corners.'}</span>
-            </div>
-            
-            <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-zinc-500">
-                Pit Window: <strong>{correlation?.recommendation?.pitWindow || 'Lap 21'}</strong>
+            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50 space-y-1">
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">Active Alerts</span>
+              <span className="text-xl font-bold font-mono text-rose-500">
+                {activeAlertsCount}
               </span>
-              <button
-                type="button"
-                onClick={() => setIsAcked(!isAcked)}
-                className={`font-medium transition-colors cursor-pointer ${
-                  isAcked ? 'text-zinc-400 dark:text-zinc-500 flex items-center gap-1' : 'text-zinc-900 dark:text-white underline underline-offset-4'
-                }`}
-              >
-                {isAcked ? (
-                  <>
-                    <CheckCircle2 className="w-3 h-3 text-zinc-600 dark:text-zinc-400" /> Acknowledged
-                  </>
-                ) : (
-                  'Acknowledge'
-                )}
-              </button>
+              <Link to="/dashboard/alerts" className="text-[10px] text-zinc-400 hover:text-zinc-900 dark:hover:text-white underline block">
+                View alert queue →
+              </Link>
             </div>
           </div>
-        </Card>
+
+          <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
+            <span>Rolling 5-Lap Avg:</span>
+            <strong className="font-mono text-zinc-900 dark:text-zinc-100">{lapStats?.last5Avg || '1:30.660'}</strong>
+          </div>
+        </div>
 
       </div>
 
-      {/* AI Decision Explainability Panel */}
+      {/* SECOND MOST IMPORTANT SECTION: LATEST AI STRATEGY DIRECTIVE */}
+      <div className="rounded-2xl border-2 border-zinc-950 dark:border-white bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800 dark:border-zinc-200">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-rose-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+              <Zap className="w-4 h-4 fill-current" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold tracking-widest text-rose-400 dark:text-rose-600 block">
+                Autonomous Pit Wall Directive
+              </span>
+              <h4 className="text-sm sm:text-base font-bold tracking-tight">
+                {currentAnalysis?.recommendation?.category || 'Radio Brevity Directive'}
+              </h4>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-xs font-mono px-3 py-1 rounded-full bg-zinc-900 dark:bg-white text-zinc-300 dark:text-zinc-800 border border-zinc-800 dark:border-zinc-300">
+              Target Pit: <strong className="text-white dark:text-black">{currentAnalysis?.recommendation?.pitWindow || 'Lap 21'}</strong>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAcked(!isAcked)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                isAcked
+                  ? 'bg-emerald-500/20 text-emerald-300 dark:text-emerald-700 border border-emerald-500/40'
+                  : 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white hover:opacity-90'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {isAcked ? 'Acknowledged' : 'Acknowledge'}
+            </button>
+          </div>
+        </div>
+
+        <p className="text-sm sm:text-base font-medium leading-relaxed italic opacity-95">
+          "{currentAnalysis?.recommendation?.action || 'Enforce radio silence through Sector 2 high-G corners and prepare undercut pit window.'}"
+        </p>
+
+        <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 dark:text-zinc-600 pt-1">
+          <span>Root Cause: High pitch jitter (+42.5 Hz) detected on Lap 18 communication</span>
+          <Link to="/dashboard/radio" className="hover:underline flex items-center gap-1 text-white dark:text-zinc-950 font-medium">
+            Review voice transmission <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* AI Decision Explainability Section */}
       <ExplainabilityPanel
         recommendation={correlation?.recommendation || currentAnalysis?.recommendation}
         emotion={emotion}
@@ -302,25 +395,27 @@ export const DashboardPage = () => {
         transcript={currentAnalysis?.transcript}
       />
 
-      {/* Main 2-Column Split */}
+      {/* MAIN 2-COLUMN TELEMETRY & RADIO STREAM */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Column (2 Cols): Live Radio Activity & Recharts Lap Chart */}
+        {/* Left 2-Cols: Live Radio Transcripts & Recharts Lap Curve */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Recent Radio Activity Feed */}
+          {/* Live Radio Transmissions Feed */}
           <Card
-            title="Live Team Radio & Speech Transcripts"
-            subtitle="Driver-to-pit audio analysis with pitch jitter and stress classification"
-            action={<Badge variant="neutral" size="sm">Channel 1</Badge>}
+            title="Cockpit Voice Transmissions"
+            subtitle="Real-time radio transcription powered by Groq Whisper Large v3"
+            action={<Badge variant="neutral" size="sm">Channel 1 Live</Badge>}
             footer={
               <div className="flex items-center justify-between text-xs text-zinc-500">
-                <span>{history.length} transmission(s) analyzed in session</span>
-                <span className="text-zinc-400">AI Ingestion Pipeline Active</span>
+                <span>{history.length} transmission(s) analyzed in current session</span>
+                <Link to="/dashboard/radio" className="text-zinc-900 dark:text-zinc-100 hover:underline font-medium">
+                  Open Voice Analyzer →
+                </Link>
               </div>
             }
           >
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {history.map((tx) => {
                 const txElevated = tx.emotion?.driverState === 'Stressed' || (tx.emotion?.stressScore || 0) >= 75;
                 const txFatigued = tx.emotion?.driverState === 'Fatigued';
@@ -328,22 +423,22 @@ export const DashboardPage = () => {
                 return (
                   <div
                     key={tx.id}
-                    className="p-4 rounded-lg bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60 space-y-2.5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all animate-in fade-in slide-in-from-top-2 duration-300"
+                    className="p-4 rounded-xl bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60 space-y-2.5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all card-hover-lift"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Volume2 className="w-3.5 h-3.5 text-zinc-400" />
+                        <Volume2 className="w-4 h-4 text-zinc-400" />
                         <span className="font-semibold text-xs text-zinc-950 dark:text-white">
                           {tx.driver} ({tx.car || 'Car #1'})
                         </span>
                         <Badge variant="outline" size="sm">Lap {tx.lap || 18}</Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-zinc-400 text-xs font-tabular">
+                        <span className="text-zinc-400 text-xs font-tabular font-mono">
                           {new Date(tx.timestamp).toLocaleTimeString()}
                         </span>
                         <StatusBadge
-                          status={txElevated ? 'critical' : txFatigued ? 'high-stress' : 'nominal'}
+                          status={txElevated ? 'critical' : txFatigued ? 'fatigued' : 'nominal'}
                           size="sm"
                         >
                           Stress {tx.emotion?.stressScore || 50}% · {tx.emotion?.driverState || 'Nominal'}
@@ -356,9 +451,9 @@ export const DashboardPage = () => {
                     </p>
 
                     <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 pt-1 border-t border-zinc-200/40 dark:border-zinc-800/40">
-                      <span>Pitch Delta: <strong className="text-zinc-800 dark:text-zinc-200 font-tabular">{tx.emotion?.pitchJitter || '+12.0 Hz'}</strong></span>
-                      <span>Speech Cadence: <strong className="text-zinc-800 dark:text-zinc-200 font-tabular">{tx.emotion?.speechCadence || '140 WPM'}</strong></span>
-                      <span>Confidence: <strong className="text-zinc-800 dark:text-zinc-200 font-tabular">{tx.confidence || 94.2}%</strong></span>
+                      <span>Pitch: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.emotion?.pitchJitter || '+12.0 Hz'}</strong></span>
+                      <span>Cadence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.emotion?.speechCadence || '140 WPM'}</strong></span>
+                      <span>Confidence: <strong className="text-zinc-800 dark:text-zinc-200 font-mono">{tx.confidence || 96.8}%</strong></span>
                     </div>
                   </div>
                 );
@@ -366,53 +461,64 @@ export const DashboardPage = () => {
             </div>
           </Card>
 
-          {/* Live Recharts Lap Telemetry & Moving Average Chart */}
+          {/* Animated Recharts Lap Telemetry Curve */}
           <Card
-            title="Lap Telemetry & Moving Average Curve"
-            subtitle="Multi-axis pace degradation overlaid with 5-lap rolling average"
-            action={<Badge variant="white" size="sm">Live Telemetry</Badge>}
+            title="Lap Pace Degradation & Rolling Average"
+            subtitle="Multi-lap telemetry pace drift overlaid with rolling 5-lap baseline"
+            action={<Badge variant="white" size="sm">Telemetry CAN</Badge>}
           >
-            <div className="h-64 w-full pt-1">
+            <div className="h-64 sm:h-72 w-full pt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} stroke="currentColor" />
                   <XAxis
                     dataKey="lap"
+                    stroke="#71717a"
+                    fontSize={11}
                     tickLine={false}
-                    axisLine={{ stroke: '#71717a', opacity: 0.3 }}
-                    tick={{ fontSize: 11, fill: '#71717a' }}
                     tickFormatter={(val) => `L${val}`}
                   />
                   <YAxis
                     domain={['dataMin - 0.5', 'dataMax + 0.5']}
+                    stroke="#71717a"
+                    fontSize={11}
                     tickLine={false}
-                    axisLine={{ stroke: '#71717a', opacity: 0.3 }}
-                    tick={{ fontSize: 11, fill: '#71717a' }}
-                    tickFormatter={formatSec}
-                    width={60}
+                    tickFormatter={(val) => `${val}s`}
+                    width={45}
                   />
                   <Tooltip content={<CustomChartTooltip />} />
-                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 8, fontSize: 11 }} />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="circle"
+                    formatter={(value) => (
+                      <span className="text-xs text-zinc-700 dark:text-zinc-300 font-medium">
+                        {value === 'lapTimeSec' ? 'Actual Lap Time (s)' : '5-Lap Moving Average (s)'}
+                      </span>
+                    )}
+                  />
                   <Line
                     type="monotone"
                     dataKey="lapTimeSec"
-                    name="Lap Pace (s)"
                     stroke="#18181b"
                     strokeWidth={2}
+                    dot={{ r: 3, fill: '#18181b', strokeWidth: 1 }}
+                    activeDot={{ r: 5, fill: '#f43f5e' }}
                     isAnimationActive={true}
-                    animationDuration={800}
-                    dot={{ r: 2.5, fill: '#18181b' }}
+                    animationDuration={1200}
+                    animationEasing="ease-in-out"
+                    className="dark:stroke-white dark:dot-fill-white"
                   />
                   <Line
                     type="monotone"
                     dataKey="movingAvgSec"
-                    name="5-Lap Moving Avg"
-                    stroke="#71717a"
-                    strokeWidth={1.5}
+                    stroke="#f43f5e"
+                    strokeWidth={2}
                     strokeDasharray="4 4"
-                    isAnimationActive={true}
-                    animationDuration={800}
                     dot={false}
+                    isAnimationActive={true}
+                    animationDuration={1200}
+                    animationEasing="ease-in-out"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -421,109 +527,84 @@ export const DashboardPage = () => {
 
         </div>
 
-        {/* Right Column: Mini Activity Timeline & Stint Strategy */}
+        {/* Right 1-Col: Live Strategy & Telemetry Anomaly Panel */}
         <div className="space-y-6">
           
-          {/* Mini Activity Timeline Card */}
+          {/* Quick Pit Window Summary */}
           <Card
-            title="Mini Activity Timeline"
-            subtitle="Chronological feed of telemetry & radio events"
-            action={
-              <Link to="/dashboard/timeline" className="text-xs font-medium text-zinc-900 dark:text-white underline underline-offset-4">
-                Full Timeline
-              </Link>
-            }
+            title="Pit Window Telemetry"
+            subtitle="Undercut & overcut predictions"
+            badge={<Badge variant="outline" size="sm">Hard Compound</Badge>}
           >
-            <div className="space-y-4 text-xs">
-              <div className="relative pl-4 border-l border-zinc-200 dark:border-zinc-800 space-y-4">
-                
-                {/* Latest Event from Timeline */}
-                <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-950 border border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
-                    <div className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-zinc-950 dark:text-white">
-                        AI Directive Issued ({currentAnalysis?.recommendation?.category || 'Sector 2'})
-                      </span>
-                      <span className="text-[11px] text-zinc-400 font-tabular">
-                        {new Date(currentAnalysis?.timestamp || Date.now()).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-zinc-500 leading-relaxed text-xs">
-                      {currentAnalysis?.recommendation?.action || 'Radio silence enforced & Lap 21 pit window prepared.'}
-                    </p>
-                  </div>
-                </div>
+            <div className="space-y-3 text-xs">
+              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 space-y-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold block">Optimum Box Lap</span>
+                <span className="text-2xl font-bold font-mono text-zinc-950 dark:text-white">Lap 21</span>
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  Undercut advantage over Mercedes #44 estimated at +1.4s with fresh Hard compound.
+                </p>
+              </div>
 
-                <div className="relative">
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-950 border border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
-                    <div className={`w-1 h-1 rounded-full ${isElevated ? 'bg-rose-500' : 'bg-zinc-500'}`} />
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-zinc-950 dark:text-white">
-                        Radio: {emotion.driverState} ({emotion.stressScore}%)
-                      </span>
-                      <span className="text-[11px] text-zinc-400 font-tabular">
-                        {new Date(currentAnalysis?.timestamp || Date.now()).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-zinc-500 leading-relaxed text-xs truncate">
-                      "{currentAnalysis?.transcript || 'Front left is completely gone guys...'}"
-                    </p>
-                  </div>
+              <div className="space-y-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
+                <div className="flex justify-between items-center text-zinc-500">
+                  <span>Pit Stop Loss Delta:</span>
+                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">19.4s</span>
                 </div>
-
-                <div className="relative">
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-zinc-950 border border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
-                    <div className="w-1 h-1 rounded-full bg-zinc-500" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-zinc-950 dark:text-white">
-                        Lap {currentAnalysis?.lap || 18} Telemetry Analyzed
-                      </span>
-                      <span className="text-[11px] text-zinc-400 font-tabular">14:20:00</span>
-                    </div>
-                    <p className="text-zinc-500 leading-relaxed text-xs">
-                      Pace: 1:31.240 (+1.82s vs stint best).
-                    </p>
-                  </div>
+                <div className="flex justify-between items-center text-zinc-500">
+                  <span>Tire Life Remaining:</span>
+                  <span className="font-mono font-medium text-rose-500">32% (Thermal drop)</span>
                 </div>
-
+                <div className="flex justify-between items-center text-zinc-500">
+                  <span>Track Position on Exit:</span>
+                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">P2 (Clear air)</span>
+                </div>
               </div>
             </div>
           </Card>
 
-          {/* Stint & Strategy Matrix */}
+          {/* Race Timeline Quick Preview */}
           <Card
-            title="Stint & Tire Strategy Matrix"
-            subtitle="Compound thermal degradation model"
-            className="text-xs"
+            title="Chronological Event Stream"
+            subtitle="Latest multi-track race telemetry events"
+            footer={
+              <Link to="/dashboard/timeline" className="text-xs text-zinc-900 dark:text-zinc-100 hover:underline font-medium flex items-center justify-between">
+                <span>View Full Race Timeline</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            }
           >
-            <div className="space-y-3">
-              <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
-                <span className="text-zinc-500">Current Compound:</span>
-                <span className="font-medium text-zinc-950 dark:text-white">Medium (Yellow)</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
-                <span className="text-zinc-500">Estimated Stint Life:</span>
-                <span className={`font-medium ${isElevated ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                  {isElevated ? '3 Laps remaining (Tire Overheat)' : '8 Laps remaining'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
-                <span className="text-zinc-500">Projected Pit Loss:</span>
-                <span className="font-medium text-zinc-950 dark:text-white font-tabular">21.4s</span>
+            <div className="space-y-3 text-xs">
+              <div className="flex items-start gap-2.5 pb-2.5 border-b border-zinc-100 dark:border-zinc-800/60">
+                <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0 animate-pulse" />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-zinc-900 dark:text-white">Lap 18</span>
+                    <span className="text-[10px] text-zinc-400 font-mono">14:22:30 UTC</span>
+                  </div>
+                  <p className="text-zinc-600 dark:text-zinc-400">Driver vocal stress spike recorded (+42.5 Hz jitter).</p>
+                </div>
               </div>
 
-              <div className="pt-2">
-                <Button variant="primary" size="sm" className="w-full gap-2">
-                  <Zap className="w-3.5 h-3.5" />
-                  Initiate Pit Protocol ({correlation?.recommendation?.pitWindow || 'Lap 21'})
-                </Button>
+              <div className="flex items-start gap-2.5 pb-2.5 border-b border-zinc-100 dark:border-zinc-800/60">
+                <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-zinc-900 dark:text-white">Lap 18</span>
+                    <span className="text-[10px] text-zinc-400 font-mono">14:22:00 UTC</span>
+                  </div>
+                  <p className="text-zinc-600 dark:text-zinc-400">Performance Risk Score raised to 61% (High Risk).</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-zinc-900 dark:text-white">Lap 14</span>
+                    <span className="text-[10px] text-zinc-400 font-mono">14:12:00 UTC</span>
+                  </div>
+                  <p className="text-zinc-600 dark:text-zinc-400">Fastest stint lap recorded (1:29.420).</p>
+                </div>
               </div>
             </div>
           </Card>
