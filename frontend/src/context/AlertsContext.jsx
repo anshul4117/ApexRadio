@@ -71,6 +71,27 @@ export const AlertsProvider = ({ children }) => {
 
   const activeAlertsCount = alerts.filter((a) => !a.acknowledged).length;
 
+  const addAlert = useCallback((newAlert) => {
+    const alertRecord = {
+      id: `alt_${Date.now()}`,
+      severity: newAlert.severity || (newAlert.stressScore >= 75 ? 'Critical' : newAlert.stressScore >= 50 ? 'High' : 'Medium'),
+      severityKey: (newAlert.severityKey || (newAlert.stressScore >= 75 ? 'critical' : newAlert.stressScore >= 50 ? 'high' : 'medium')).toLowerCase(),
+      title: newAlert.title || 'Driver Radio & Telemetry Anomaly Detected',
+      timestamp: `${new Date().toLocaleTimeString()} (Just now)`,
+      driver: newAlert.driver || 'Max Verstappen (Car #1)',
+      driverState: newAlert.driverState || 'Stressed',
+      lap: newAlert.lap || 18,
+      confidence: newAlert.confidence || 94.2,
+      recommendedAction: newAlert.recommendedAction || newAlert.action || 'Enforce radio silence & prepare pit window.',
+      whyGenerated: newAlert.whyGenerated || `Acoustic stress spike detected with ${newAlert.pitchJitter || '+42.5 Hz'} pitch jitter.`,
+      category: newAlert.category || 'Real-Time Radio Directive',
+      acknowledged: false,
+    };
+
+    setAlerts((prev) => [alertRecord, ...prev]);
+    return alertRecord;
+  }, []);
+
   const acknowledgeAlert = useCallback((id) => {
     setAlerts((prev) =>
       prev.map((a) => (a.id === id ? { ...a, acknowledged: !a.acknowledged } : a))
@@ -101,6 +122,7 @@ export const AlertsProvider = ({ children }) => {
         activeAlertsCount,
         filter,
         setFilter,
+        addAlert,
         acknowledgeAlert,
         acknowledgeAll,
         resetAlerts,

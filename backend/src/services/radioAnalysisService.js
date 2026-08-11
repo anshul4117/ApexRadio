@@ -58,71 +58,78 @@ class RadioAnalysisService {
   async analyzeAudio(file, params = {}) {
     const startTime = Date.now();
     const filePath = file?.path || null;
-    const sampleHint = params.sampleHint || file?.originalname || '';
+    const sampleHint = params.sampleHint || '';
 
-    logger.info(`[RadioAnalysis] Executing pipeline for: ${sampleHint || file?.originalname || 'audio stream'}`);
+    logger.info(`[RadioAnalysis] Executing STT + Emotion pipeline for: ${file?.originalname || sampleHint || 'audio stream'}`);
 
-    // 1. Run Hugging Face Speech To Text
-    const sttResult = await speechToTextService.transcribeAudio(filePath, { sampleHint });
+    try {
+      // 1. Run Hugging Face Speech To Text on the uploaded audio file
+      const sttResult = await speechToTextService.transcribeAudio(filePath, {
+        sampleHint,
+        originalName: file?.originalname || null,
+      });
 
-    // 2. Run Hugging Face Emotion & Stress Detection
-    const emotionResult = await emotionDetectionService.detectEmotion(sttResult.transcript, {
-      durationSeconds: sttResult.durationSeconds,
-    });
+      logger.info(`[RadioAnalysis] STT finished. Passing transcript (${sttResult.transcript.length} chars) to Emotion Classifier...`);
 
-    // 3. Generate Dynamic AI Pit Wall Recommendation
-    const recommendation = this.generateAiRecommendation(emotionResult, params);
+      // 2. Pass transcript directly into Emotion & Stress Detection Service
+      const emotionResult = await emotionDetectionService.detectEmotion(sttResult.transcript, {
+        durationSeconds: sttResult.durationSeconds,
+      });
 
-    // 4. Calculate Timing & Metadata
-    const elapsedSeconds = Math.round((Date.now() - startTime) / 10) / 100;
-    const processingTimeStr = `${Math.max(0.85, elapsedSeconds)}s`;
-    const audioDurationStr = `${sttResult.durationSeconds || 4.2}s`;
-    const hasKey = huggingFaceClient.hasApiKey();
+      // 3. Generate Dynamic AI Pit Wall Recommendation
+      const recommendation = this.generateAiRecommendation(emotionResult, params);
 
-    const record = {
-      id: `tx_${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      driver: params.driverName || 'Max Verstappen',
-      driverId: params.driverId || 'VER-01',
-      car: params.car || 'Car #1',
-      lap: params.lap ? Number(params.lap) : 18,
-      transcript: sttResult.transcript,
-      emotion: {
-        driverState: emotionResult.driverState,
-        stressScore: emotionResult.stressScore,
-        emotionLabel: emotionResult.emotionLabel,
-        pitchJitter: emotionResult.pitchJitter,
-        speechCadence: emotionResult.speechCadence,
-        vocalIntensity: emotionResult.vocalIntensity,
-        modelScores: emotionResult.modelScores || [],
-      },
-      confidence: Math.round(((sttResult.confidence + emotionResult.confidence) / 2) * 10) / 10,
-      recommendation,
-      metadata: {
-        audioDuration: audioDurationStr,
-        audioFormat: file?.mimetype?.includes('mp3') ? 'MP3' : 'WAV',
-        fileSizeKb: file?.size ? Math.round(file.size / 1024) : 160,
-        originalName: file?.originalname || 'radio_transmission.wav',
-        sttModel: envConfig.hfSttModel,
-        emotionModel: envConfig.hfEmotionModel,
-        inferenceProvider: hasKey ? 'Hugging Face Inference' : 'Motorsport Acoustic Engine',
-      },
-      processingTime: processingTimeStr,
-    };
+      // 4. Calculate Timing & Metadata
+      const elapsedSeconds = Math.round((Date.now() - startTime) / 10) / 100;
+      const processingTimeStr = `${Math.max(0.85, elapsedSeconds)}s`;
+      const audioDurationStr = `${sttResult.durationSeconds || 4.2}s`;
+      const hasKey = huggingFaceClient.hasApiKey();
 
-    // Prepend to history
-    analysisHistory.unshift(record);
+      const record = {
+        id: `tx_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        driver: params.driverName || 'Max Verstappen',
+        driverId: params.driverId || 'VER-01',
+        car: params.car || 'Car #1',
+        lap: params.lap ? Number(params.lap) : 18,
+        transcript: sttResult.transcript,
+        emotion: {
+          driverState: emotionResult.driverState,
+          stressScore: emotionResult.stressScore,
+          emotionLabel: emotionResult.emotionLabel,
+          pitchJitter: emotionResult.pitchJitter,
+          speechCadence: emotionResult.speechCadence,
+          vocalIntensity: emotionResult.vocalIntensity,
+          modelScores: emotionResult.modelScores || [],
+        },
+        confidence: Math.round(((sttResult.confidence + emotionResult.confidence) / 2) * 10) / 10,
+        recommendation,
+        metadata: {
+          audioDuration: audioDurationStr,
+          audioFormat: file?.mimetype?.includes('mp3') ? 'MP3' : 'WAV',
+          fileSizeKb: file?.size ? Math.round(file.size / 1024) : 160,
+          originalName: file?.originalname || 'radio_transmission.wav',
+          sttModel: envConfig.hfSttModel,
+          emotionModel: envConfig.hfEmotionModel,
+          inferenceProvider: sttResult.provider || (hasKey ? 'Hugging Face Inference' : 'Motorsport Acoustic Engine'),
+        },
+        processingTime: processingTimeStr,
+      };
 
-    // Clean up temporary uploaded file after analysis
-    if (filePath && fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-      } catch (unlinkErr) {
-        logger.warn(`Could not delete temp file ${filePath}: ${unlinkErr.message}`);
+      // Prepend to session history
+      analysisHistory.unshift(record);
+
+      return record;
+    } finally {
+      // Clean up temporary uploaded file after analysis
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          logger.warn(`Could not delete temp file ${filePath}: ${unlinkErr.message}`);
+        }
       }
     }
-
-    return record;
   }
 
   /**

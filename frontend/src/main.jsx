@@ -3,10 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-import { RadioProvider } from './context/RadioContext';
-import { LapProvider } from './context/LapContext';
-import { AlertsProvider } from './context/AlertsContext';
 import { DemoProvider } from './context/DemoContext';
+import { AlertsProvider } from './context/AlertsContext';
+import { LapProvider } from './context/LapContext';
+import { RadioProvider } from './context/RadioContext';
 import App from './App';
 import './index.css';
 
@@ -14,17 +14,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <AlertsProvider>
-          <RadioProvider>
+        <DemoProvider>
+          <AlertsProvider>
             <LapProvider>
-              <DemoProvider>
+              <RadioProvider>
                 <BrowserRouter>
                   <App />
                 </BrowserRouter>
-              </DemoProvider>
+              </RadioProvider>
             </LapProvider>
-          </RadioProvider>
-        </AlertsProvider>
+          </AlertsProvider>
+        </DemoProvider>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>

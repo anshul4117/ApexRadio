@@ -43,12 +43,12 @@ class EmotionDetectionService {
           return this.mapHfScoresToDriverState(rawScores, text);
         }
 
-        logger.warn('[Emotion] Received unexpected format from Hugging Face model. Using heuristic fallback.');
+        logger.warn('[Emotion] Received unexpected format from Hugging Face model. Using domain-tuned linguistic engine.');
       } catch (hfError) {
         logger.warn(`[Emotion] Hugging Face inference failed: [${hfError.code || 'ERROR'}] ${hfError.message}`);
       }
     } else {
-      logger.info('[Emotion] HUGGINGFACE_API_KEY is not set. Using domain-tuned motorsport heuristics.');
+      logger.info('[Emotion] HUGGINGFACE_API_KEY is not set. Using domain-tuned motorsport linguistic engine.');
     }
 
     // 2. Domain-tuned motorsport emotion heuristics fallback
@@ -144,11 +144,18 @@ class EmotionDetectionService {
     if (
       textLower.includes('gone') ||
       textLower.includes('understeer') ||
+      textLower.includes('oversteer') ||
+      textLower.includes('snapping') ||
       textLower.includes('cannot rotate') ||
+      textLower.includes('can not rotate') ||
       textLower.includes('rain') ||
       textLower.includes('heavier') ||
       textLower.includes('no grip') ||
-      textLower.includes('traffic')
+      textLower.includes('traffic') ||
+      textLower.includes('puncture') ||
+      textLower.includes('crash') ||
+      textLower.includes('disaster') ||
+      textLower.includes('slip')
     ) {
       const isRain = textLower.includes('rain');
       return {
@@ -169,6 +176,11 @@ class EmotionDetectionService {
       textLower.includes('loose') ||
       textLower.includes('struggling') ||
       textLower.includes('tired') ||
+      textLower.includes('exhausted') ||
+      textLower.includes('neck') ||
+      textLower.includes('hurting') ||
+      textLower.includes('fatigue') ||
+      textLower.includes('long brake') ||
       textLower.includes('pedal long')
     ) {
       return {

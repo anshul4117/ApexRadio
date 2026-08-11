@@ -21,13 +21,33 @@ import { useLap } from '../context/LapContext';
 import { useDemo } from '../context/DemoContext';
 
 export const RaceTimelinePage = () => {
-  const { history } = useRadio();
+  const { history, currentAnalysis } = useRadio();
   const { lapStats, correlation, filename } = useLap();
   const { isDemoMode } = useDemo();
   const [filterType, setFilterType] = useState('ALL');
 
-  // Multi-Track Chronological Event Stream (Laps 1 to 18)
-  const allTimelineEvents = [
+  // Dynamically map live radio transmissions from history
+  const liveRadioEvents = (history || []).map((h) => {
+    const isStressed = h.emotion?.driverState === 'Stressed' || (h.emotion?.stressScore || 0) >= 65;
+    const isFatigued = h.emotion?.driverState === 'Fatigued';
+
+    return {
+      id: `live_${h.id}`,
+      lap: h.lap || 18,
+      time: new Date(h.timestamp).toLocaleTimeString(),
+      category: 'RADIO',
+      categoryLabel: 'Live Radio Ingestion',
+      title: `${h.driver} Radio (${h.emotion?.driverState || 'Nominal'} · ${h.emotion?.stressScore || 50}%)`,
+      description: `Driver transmission: "${h.transcript}". Acoustic pitch jitter recorded at ${h.emotion?.pitchJitter || '+12 Hz'} with ${h.confidence || 94.2}% Whisper confidence.`,
+      badge: isStressed ? 'Stress Spike' : isFatigued ? 'Fatigue Alert' : 'Nominal Delta',
+      status: isStressed ? 'critical' : isFatigued ? 'high-stress' : 'nominal',
+      icon: Volume2,
+      isLive: true,
+    };
+  });
+
+  // Baseline timeline events spanning Laps 1 to 18
+  const staticTimelineEvents = [
     {
       id: 'tl_01',
       lap: 18,
@@ -41,25 +61,13 @@ export const RaceTimelinePage = () => {
       icon: Zap,
     },
     {
-      id: 'tl_02',
-      lap: 18,
-      time: '14:22:15 UTC',
-      category: 'RADIO',
-      categoryLabel: 'Radio & Emotion Spike',
-      title: 'Verstappen Radio: "Front Left is Completely Gone"',
-      description: 'Speech STT transcript: "Front left is completely gone guys, massive understeer in Turn 4, I cannot rotate the car." Pitch jitter: +42.5 Hz, vocal intensity: 88 dB.',
-      badge: 'Stress 78%',
-      status: 'critical',
-      icon: Volume2,
-    },
-    {
       id: 'tl_03',
       lap: 18,
       time: '14:22:00 UTC',
       category: 'RISK',
       categoryLabel: 'Risk Score Escalation',
       title: 'Performance Risk Score Raised: 22% → 61% (High)',
-      description: 'Multi-factor correlation engine flagged +0.84s pace loss, front-left tire degradation (40.4%), and 2 consecutive high-stress radio callouts.',
+      description: 'Multi-factor correlation engine flagged +0.84s pace loss, front-left tire degradation (40.4%), and consecutive high-stress radio callouts.',
       badge: 'Risk: 61%',
       status: 'critical',
       icon: Gauge,
@@ -75,18 +83,6 @@ export const RaceTimelinePage = () => {
       badge: 'Lap 18',
       status: 'nominal',
       icon: Flag,
-    },
-    {
-      id: 'tl_05',
-      lap: 16,
-      time: '14:18:40 UTC',
-      category: 'RADIO',
-      categoryLabel: 'Radio Callout',
-      title: 'Verstappen Radio: Traffic in Sector 2',
-      description: 'Speech STT transcript: "Traffic ahead in Sector 2! He is weaving on the straight." Stress evaluated at 62% (High). Pace loss in S2: +0.32s.',
-      badge: 'Traffic Callout',
-      status: 'high-stress',
-      icon: Volume2,
     },
     {
       id: 'tl_06',
@@ -125,18 +121,6 @@ export const RaceTimelinePage = () => {
       icon: Zap,
     },
     {
-      id: 'tl_09',
-      lap: 4,
-      time: '13:58:10 UTC',
-      category: 'RADIO',
-      categoryLabel: 'Radio Callout',
-      title: 'Verstappen Radio: Gap Stability Check',
-      description: 'Transcript: "Gap to car behind is stable at plus two point five seconds. Balance feels good." Stress score: 18% (Calm).',
-      badge: 'Calm Baseline',
-      status: 'nominal',
-      icon: Volume2,
-    },
-    {
       id: 'tl_10',
       lap: 1,
       time: '13:52:00 UTC',
@@ -150,9 +134,12 @@ export const RaceTimelinePage = () => {
     },
   ];
 
-  const filteredEvents = allTimelineEvents.filter((e) => {
+  // Combined stream: live events prioritized at the top
+  const combinedStream = [...liveRadioEvents, ...staticTimelineEvents];
+
+  const filteredEvents = combinedStream.filter((e) => {
     if (filterType === 'RADIO') return e.category === 'RADIO';
-    if (filterType === 'EMOTION') return e.category === 'RADIO' && e.status === 'critical';
+    if (filterType === 'EMOTION') return e.category === 'RADIO' && (e.status === 'critical' || e.status === 'high-stress');
     if (filterType === 'LAP') return e.category === 'LAP';
     if (filterType === 'RISK') return e.category === 'RISK';
     if (filterType === 'AI') return e.category === 'AI';
@@ -198,13 +185,13 @@ export const RaceTimelinePage = () => {
           const Icon = evt.icon;
 
           return (
-            <div key={evt.id} className="relative group">
+            <div key={evt.id} className="relative group animate-in fade-in slide-in-from-top-2 duration-300">
               {/* Timeline Dot Indicator */}
               <div className="absolute -left-[31px] sm:-left-[39px] top-3.5 w-3.5 h-3.5 rounded-full bg-white dark:bg-zinc-950 border-2 border-zinc-900 dark:border-white flex items-center justify-center shadow-2xs">
                 <div
                   className={`w-1 h-1 rounded-full ${
                     evt.status === 'critical'
-                      ? 'bg-rose-500'
+                      ? 'bg-rose-500 animate-pulse'
                       : evt.status === 'success'
                       ? 'bg-emerald-500'
                       : evt.status === 'strategy'

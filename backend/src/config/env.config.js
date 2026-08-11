@@ -1,7 +1,9 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
+// Load environment variables from cwd and from backend/.env
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Production-safe allowlist of frontend domains
 const defaultAllowedOrigins = [

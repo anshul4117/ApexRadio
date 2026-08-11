@@ -206,7 +206,7 @@ export const AiAlertsPage = () => {
           {displayedAlerts.map((alt) => (
             <Card
               key={alt.id}
-              className={`border-l-4 transition-all ${
+              className={`border-l-4 transition-all duration-300 animate-in fade-in slide-in-from-top-3 ${
                 alt.severityKey === 'critical'
                   ? 'border-l-rose-500'
                   : alt.severityKey === 'high'

@@ -30,6 +30,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
+import ExplainabilityPanel from '../components/ui/ExplainabilityPanel';
 import { useLap } from '../context/LapContext';
 import { useRadio } from '../context/RadioContext';
 
@@ -63,36 +64,31 @@ export const LapPerformancePage = () => {
     }
   };
 
+  const fastestLap = lapStats?.fastestLap || { lap: 14, lapTime: '1:29.420', lapTimeSec: 89.42 };
+  const slowestLap = lapStats?.slowestLap || { lap: 18, lapTime: '1:31.240', lapTimeSec: 91.24 };
   const chartData = lapStats?.chartData || [];
-  const fastestLap = lapStats?.fastestLap || { lap: 14, lapTime: '1:29.420' };
-  const riskScore = correlation?.riskScore || 61;
-  const riskTier = correlation?.riskTier || 'High';
-  const explainability = correlation?.explainabilityFactors || [];
 
-  // Recharts Custom Tooltip
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="p-3 bg-zinc-950 text-white dark:bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl text-xs space-y-1">
-          <div className="font-semibold flex items-center justify-between gap-3 border-b border-zinc-800 pb-1">
-            <span>Lap {label}</span>
-            <span className="font-tabular text-zinc-300">{data.lapTime}</span>
+        <div className="p-3 bg-zinc-950 text-white dark:bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl text-xs space-y-1.5 min-w-[170px]">
+          <div className="flex justify-between items-center border-b border-zinc-800 pb-1">
+            <span className="font-semibold text-zinc-100">Lap {label}</span>
+            <span className="font-tabular font-bold text-white">{data.lapTime}</span>
           </div>
-          <div className="flex justify-between gap-3 text-[11px] text-zinc-400">
-            <span>5-Lap Moving Avg:</span>
-            <span className="font-tabular text-white">{data.movingAvg}</span>
+          <div className="flex justify-between text-zinc-400">
+            <span>5-Lap Avg:</span>
+            <span className="font-tabular text-zinc-200">{data.movingAvg}</span>
           </div>
-          <div className="flex justify-between gap-3 text-[11px] text-zinc-400">
-            <span>Delta vs Best:</span>
-            <span className={`font-tabular ${data.deltaToBestSec > 0.5 ? 'text-rose-400' : 'text-emerald-400'}`}>
-              +{data.deltaToBestSec}s
-            </span>
+          <div className="flex justify-between text-zinc-400">
+            <span>Tire Life:</span>
+            <span className="font-tabular text-zinc-200">{data.tireDeg}</span>
           </div>
           {data.stressEvent && (
-            <div className="pt-1 text-[10px] text-rose-400 font-medium flex items-center gap-1 border-t border-zinc-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>{data.stressEvent}</span>
+            <div className="pt-1 text-rose-400 text-[11px] font-medium border-t border-zinc-800 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+              {data.stressEvent}
             </div>
           )}
         </div>
@@ -106,16 +102,27 @@ export const LapPerformancePage = () => {
       
       {/* Section Header */}
       <SectionHeader
-        title="Lap Performance & Telemetry Analysis"
-        subtitle="Ingest vehicle telemetry CSV feeds, evaluate sector degradation, and correlate pace loss with vocal stress"
-        badge={<StatusBadge status={correlation?.riskBadgeVariant || 'critical'}>Risk Score {riskScore}%</StatusBadge>}
+        title="Lap Telemetry & Pace Degradation Analysis"
+        subtitle="Sector timing splits, rolling moving averages & biometric risk score correlation"
+        badge={
+          <StatusBadge status={lapStats?.paceTrend === 'worsening' ? 'critical' : 'nominal'}>
+            Pace Trend: {lapStats?.paceTrend ? lapStats.paceTrend.toUpperCase() : 'WORSENING (+0.84s)'}
+          </StatusBadge>
+        }
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5">
-              <UploadCloud className="w-3.5 h-3.5 text-zinc-500" /> Upload CSV
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-1.5"
+            >
+              <UploadCloud className="w-3.5 h-3.5 text-zinc-500" />
+              Upload Telemetry CSV
             </Button>
             <Button variant="outline" size="sm" onClick={loadSamplePreset} className="gap-1.5">
-              <RefreshCw className="w-3.5 h-3.5 text-zinc-500" /> Load Silverstone Data
+              <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+              Reset Silverstone Data
             </Button>
           </div>
         }
@@ -125,140 +132,138 @@ export const LapPerformancePage = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv, text/csv, text/plain"
+        accept=".csv, text/csv"
         onChange={handleFileChange}
         className="hidden"
       />
 
       {/* Error Alert */}
       {lapError && (
-        <div className="p-3.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+        <div className="p-3.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{lapError}</span>
         </div>
       )}
 
-      {/* CSV Ingestion Dropzone & Stint Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* CSV Telemetry Upload Area */}
-        <Card
-          title="Telemetry CSV Ingestion"
-          subtitle={`Active dataset: ${filename}`}
-          action={<Badge variant="outline" size="sm">CAN Bus Telemetry</Badge>}
-          className="lg:col-span-2"
-        >
-          <div className="space-y-3">
-            {isAnalyzing ? (
-              <div className="p-6 text-center space-y-3 bg-zinc-50/50 dark:bg-zinc-950/40 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <Activity className="w-6 h-6 mx-auto text-zinc-900 dark:text-white animate-pulse" />
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-zinc-950 dark:text-white">
-                    Parsing Telemetry CSV & Running Multi-Factor Correlation... ({uploadProgress}%)
-                  </p>
-                  <p className="text-[11px] text-zinc-500">
-                    Computing moving averages and correlating sector deltas with driver stress events.
-                  </p>
+      {/* Upload Progress Stepper Card */}
+      <Card
+        title="CAN Bus / Telemetry CSV Ingestion"
+        subtitle={`Active session dataset: ${filename || 'silverstone_stint1_telemetry.csv'}`}
+        action={<Badge variant="outline" size="sm">CSV Parser</Badge>}
+      >
+        <div className="space-y-4">
+          {isAnalyzing ? (
+            <div className="p-6 text-center space-y-3 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800">
+              <Activity className="w-8 h-8 mx-auto text-zinc-900 dark:text-white animate-pulse" />
+              <div className="space-y-1 max-w-xs mx-auto">
+                <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                  Parsing Telemetry Data ({uploadProgress}%)...
+                </p>
+                <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress || 65}%` }}
+                  />
                 </div>
               </div>
-            ) : (
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border border-dashed rounded-lg p-5 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-2 ${
-                  dragOver
-                    ? 'border-zinc-900 bg-zinc-100 dark:border-white dark:bg-zinc-900'
-                    : 'border-zinc-300 dark:border-zinc-700 bg-zinc-50/40 dark:bg-zinc-950/30 hover:border-zinc-500'
-                }`}
-              >
-                <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
-                  <FileSpreadsheet className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-zinc-950 dark:text-white">
-                    Drag and drop lap timing CSV here, or click to browse
-                  </p>
-                  <p className="text-[11px] text-zinc-500">
-                    Supports Motec, CAN bus, and standard timing export formats
-                  </p>
-                </div>
+            </div>
+          ) : (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border border-dashed rounded-lg p-5 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-2 ${
+                dragOver
+                  ? 'border-zinc-900 bg-zinc-100 dark:border-white dark:bg-zinc-900'
+                  : 'border-zinc-300 dark:border-zinc-700 bg-zinc-50/40 dark:bg-zinc-950/30 hover:border-zinc-500'
+              }`}
+            >
+              <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
+                <FileSpreadsheet className="w-4 h-4" />
               </div>
-            )}
+              <div>
+                <p className="text-xs font-semibold text-zinc-950 dark:text-white">
+                  Drag and drop timing CSV here, or click to upload
+                </p>
+                <p className="text-[11px] text-zinc-500">
+                  Headers required: lap, lapTime, s1, s2, s3, topSpeed, tireDeg
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
 
+      {/* Top 4 Metric KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Fastest Lap */}
+        <Card title="Fastest Stint Lap" subtitle="Purple Sector 1 & 3" badge={<Badge variant="white" size="sm">Lap {fastestLap.lap}</Badge>}>
+          <div className="space-y-1">
+            <span className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white font-tabular">
+              {fastestLap.lapTime}
+            </span>
             <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
-              <span>Parsed Laps: <strong className="text-zinc-900 dark:text-zinc-100 font-tabular">{lapStats?.totalLaps || 18} Laps</strong></span>
-              <button
-                type="button"
-                onClick={loadSamplePreset}
-                className="text-zinc-900 dark:text-white font-medium underline underline-offset-4 hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                Reset to Sample Stint 1
-              </button>
+              <span>Top Speed: <strong className="text-zinc-900 dark:text-zinc-100 font-tabular">328.9 km/h</strong></span>
+              <span className="text-zinc-700 dark:text-zinc-300 font-medium">Clear air</span>
             </div>
           </div>
         </Card>
 
-        {/* Performance Trend Summary */}
-        <Card
-          title="Performance Trend Summary"
-          subtitle="Pace degradation & moving average"
-          badge={
-            <Badge
-              variant={
-                lapStats?.lapTrend === 'worsening'
-                  ? 'danger'
-                  : lapStats?.lapTrend === 'improving'
-                  ? 'success'
-                  : 'neutral'
-              }
-              size="sm"
-            >
-              Trend: {lapStats?.lapTrend ? lapStats.lapTrend.charAt(0).toUpperCase() + lapStats.lapTrend.slice(1) : 'Worsening'}
-            </Badge>
-          }
-        >
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Fastest Stint Lap:</span>
-              <span className="font-medium text-zinc-950 dark:text-white font-tabular">
-                {fastestLap.lapTime} (Lap {fastestLap.lap})
-              </span>
+        {/* Slowest Lap */}
+        <Card title="Stint Degradation High" subtitle="Understeer incident" badge={<StatusBadge status="critical" size="sm">Lap {slowestLap.lap}</StatusBadge>}>
+          <div className="space-y-1">
+            <span className="text-3xl font-semibold tracking-tight text-rose-600 dark:text-rose-400 font-tabular">
+              {slowestLap.lapTime}
+            </span>
+            <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
+              <span>Delta vs Best:</span>
+              <span className="text-rose-600 dark:text-rose-400 font-medium font-tabular">+1.820s (S2 Loss)</span>
             </div>
-            <div className="flex justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Average Stint Pace:</span>
-              <span className="font-medium text-zinc-950 dark:text-white font-tabular">
-                {lapStats?.averageLapTime || '1:30.120'}
-              </span>
+          </div>
+        </Card>
+
+        {/* Average Stint Pace */}
+        <Card title="Average Stint Pace" subtitle="18 Laps Completed" badge={<Badge variant="outline" size="sm">Rolling Pace</Badge>}>
+          <div className="space-y-1">
+            <span className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white font-tabular">
+              {lapStats?.averageLapTime || '1:30.120'}
+            </span>
+            <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
+              <span>Standard Dev:</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100 font-tabular">±0.48s</span>
             </div>
-            <div className="flex justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Last 5 Laps Average:</span>
-              <span className="font-medium text-rose-600 dark:text-rose-400 font-tabular">
-                {lapStats?.lastFiveAvgTime || '1:30.660'} ({lapStats?.paceDeltaVsAvg || '+0.84s'})
-              </span>
-            </div>
-            <div className="flex justify-between text-zinc-500">
-              <span>Undercut Threat:</span>
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">Lap 21 (+1.8s Gain)</span>
+          </div>
+        </Card>
+
+        {/* Last 5-Lap Pace Delta */}
+        <Card title="Last 5-Lap Pace Drift" subtitle="Tire thermal dropoff" badge={<StatusBadge status="critical" size="sm">Pace Drop</StatusBadge>}>
+          <div className="space-y-1">
+            <span className="text-3xl font-semibold tracking-tight text-rose-600 dark:text-rose-400 font-tabular">
+              {lapStats?.last5Avg || '1:30.660'}
+            </span>
+            <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
+              <span>Pace Drop:</span>
+              <span className="text-rose-600 dark:text-rose-400 font-medium font-tabular">{lapStats?.paceDeltaVsAvg || '+0.84s / lap'}</span>
             </div>
           </div>
         </Card>
 
       </div>
 
-      {/* Interactive Recharts Multi-Line Lap Pace Chart */}
+      {/* Main Recharts Telemetry Chart Card */}
       <Card
-        title="Lap Pace & Moving Average Telemetry Curve"
-        subtitle="Lap-by-lap time progression correlated with 5-lap moving average and acoustic stress events"
-        action={<Badge variant="white" size="sm">Recharts Engine</Badge>}
+        title="Lap Pace vs 5-Lap Rolling Moving Average"
+        subtitle="Telemetry pace trend with acoustic stress incident correlation"
+        action={<Badge variant="neutral" size="sm">Silverstone GP Telemetry</Badge>}
       >
-        <div className="h-72 w-full pt-2">
+        <div className="h-80 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
               <XAxis
                 dataKey="lap"
@@ -276,27 +281,27 @@ export const LapPerformancePage = () => {
                 width={65}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                wrapperStyle={{ paddingBottom: 12, fontSize: 11 }}
-              />
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12, fontSize: 12 }} />
               <Line
                 type="monotone"
                 dataKey="lapTimeSec"
                 name="Lap Pace (s)"
                 stroke="#18181b"
-                strokeWidth={2}
+                strokeWidth={2.5}
+                isAnimationActive={true}
+                animationDuration={800}
                 dot={{ r: 3, fill: '#18181b' }}
-                activeDot={{ r: 6, fill: '#e11d48' }}
+                activeDot={{ r: 6 }}
               />
               <Line
                 type="monotone"
                 dataKey="movingAvgSec"
                 name="5-Lap Moving Avg"
                 stroke="#71717a"
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="4 4"
+                isAnimationActive={true}
+                animationDuration={800}
                 dot={false}
               />
             </LineChart>
@@ -304,60 +309,14 @@ export const LapPerformancePage = () => {
         </div>
       </Card>
 
-      {/* Correlation Summary & Explainability Panel */}
-      <Card
-        title="Driver Stress vs Telemetry Correlation & Explainability Panel"
-        subtitle="Automated correlation between vocal pitch tension, lap degradation, and pit window urgency"
-        badge={<StatusBadge status={correlation?.riskBadgeVariant || 'critical'}>{riskTier} Risk ({riskScore}%)</StatusBadge>}
-      >
-        <div className="space-y-4">
-          
-          {/* Explainability Reason Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            {explainability.map((factor) => (
-              <div
-                key={factor.id}
-                className={`p-3.5 rounded-lg border space-y-1 ${
-                  factor.severity === 'critical'
-                    ? 'border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20'
-                    : factor.severity === 'warning'
-                    ? 'border-zinc-300 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-900/40'
-                    : 'border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-950/30'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-zinc-950 dark:text-white">
-                    {factor.title}
-                  </span>
-                  <StatusBadge status={factor.severity === 'critical' ? 'critical' : 'nominal'} size="sm">
-                    {factor.severity}
-                  </StatusBadge>
-                </div>
-                <p className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
-                  {factor.description}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* AI Directive Banner */}
-          {correlation?.recommendation && (
-            <div className="p-4 rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-              <div className="flex items-center gap-2.5">
-                <Zap className="w-4 h-4 flex-shrink-0" />
-                <div>
-                  <span className="font-semibold">AI Recommended Action ({correlation.recommendation.category}): </span>
-                  <span>{correlation.recommendation.action}</span>
-                </div>
-              </div>
-              <Badge variant="white" size="sm" className="self-start sm:self-center">
-                Target: {correlation.recommendation.pitWindow}
-              </Badge>
-            </div>
-          )}
-
-        </div>
-      </Card>
+      {/* AI Decision Explainability Section */}
+      <ExplainabilityPanel
+        recommendation={correlation?.recommendation}
+        emotion={currentAnalysis?.emotion}
+        lapStats={lapStats}
+        correlation={correlation}
+        transcript={currentAnalysis?.transcript}
+      />
 
       {/* Sector Performance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

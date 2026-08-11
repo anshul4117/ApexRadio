@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { Menu, ChevronRight, Bell, LogOut, Sparkles } from 'lucide-react';
+import { Menu, ChevronRight, Bell, LogOut, Sparkles, Play, Flame } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import StatusBadge from '../ui/StatusBadge';
 import { useAuth } from '../../context/AuthContext';
@@ -12,7 +12,7 @@ export const TopHeader = ({ onMobileMenuToggle }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { activeAlertsCount } = useAlerts();
-  const { isDemoMode, toggleDemoMode } = useDemo();
+  const { isDemoMode, toggleDemoMode, isLiveDemoRunning, startLiveDemo, stopLiveDemo } = useDemo();
 
   const routeTitles = {
     '/dashboard': 'Overview',
@@ -66,14 +66,29 @@ export const TopHeader = ({ onMobileMenuToggle }) => {
           </div>
         </div>
 
-        {/* Right: Demo Mode Switch, Live Stream Badge, Theme, Alerts, User Profile & Logout */}
+        {/* Right: Run Live Demo Button, Demo Mode Switch, Theme, Alerts, User Profile & Logout */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           
-          {/* Demo Mode Toggle Button for Judges & Mentors */}
+          {/* One-Click 60s Live Race Demo Button for Judges */}
+          <button
+            type="button"
+            onClick={isLiveDemoRunning ? stopLiveDemo : startLiveDemo}
+            className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              isLiveDemoRunning
+                ? 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-400'
+                : 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:opacity-90'
+            }`}
+            title="Simulate complete 60-second live race sequence for judges"
+          >
+            <Play className="w-3 h-3 fill-current" />
+            <span>{isLiveDemoRunning ? 'Stop Live Demo' : 'Run Live Demo'}</span>
+          </button>
+
+          {/* Demo Mode Toggle Button */}
           <button
             type="button"
             onClick={toggleDemoMode}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+            className={`hidden sm:flex px-2.5 py-1 rounded-md text-xs font-medium border items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
               isDemoMode
                 ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent'
                 : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
@@ -81,18 +96,12 @@ export const TopHeader = ({ onMobileMenuToggle }) => {
             title="Toggle pre-loaded Silverstone GP race scenario"
           >
             <Sparkles className="w-3 h-3 text-rose-500" />
-            <span className="hidden sm:inline">Demo Mode:</span>
+            <span>Demo Mode:</span>
             <span>{isDemoMode ? 'ON' : 'OFF'}</span>
           </button>
 
-          {/* Active Car & Pace Delta */}
-          <div className="hidden xl:flex items-center gap-2 text-xs border-r border-zinc-200 dark:border-zinc-800 pr-2.5 text-zinc-500">
-            <span>Car #1 VER</span>
-            <span className="text-zinc-900 dark:text-zinc-100 font-medium font-tabular">(P1 | +1.420s)</span>
-          </div>
-
           {/* Telemetry Live Badge */}
-          <StatusBadge status="live" size="sm" className="hidden sm:inline-flex">
+          <StatusBadge status="live" size="sm" className="hidden lg:inline-flex">
             Live Stream
           </StatusBadge>
 
