@@ -7,8 +7,10 @@ const logger = require('../utils/logger.util');
  */
 class HuggingFaceClient {
   constructor() {
-    this.primaryBaseUrl = 'https://router.huggingface.co/hf-inference/models';
-    this.fallbackBaseUrl = 'https://api-inference.huggingface.co/models';
+    // Primary standard Serverless Inference API endpoint (works with standard Read tokens)
+    this.primaryBaseUrl = 'https://api-inference.huggingface.co/models';
+    // Fallback provider router endpoint
+    this.fallbackBaseUrl = 'https://router.huggingface.co/hf-inference/models';
   }
 
   /**
@@ -19,8 +21,73 @@ class HuggingFaceClient {
   }
 
   /**
+   * Safely calculate request timeout in milliseconds
+   */
+  getTimeoutMs() {
+    const timeout = Number(envConfig.hfRequestTimeoutMs);
+    return !isNaN(timeout) && timeout > 0 ? timeout : 12000;
+  }
+
+  /**
+   * Internal helper to dispatch inference requests with primary -> fallback URL support
+   */
+  async sendInferenceRequest(modelId, body, contentType) {
+    const urls = [
+      `${this.primaryBaseUrl}/${modelId}`,
+      `${this.fallbackBaseUrl}/${modelId}`,
+    ];
+
+    const timeoutMs = this.getTimeoutMs();
+    let lastError = null;
+
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      const isFallback = i > 0;
+
+      try {
+        if (isFallback) {
+          logger.info(`[HuggingFace] Retrying model ${modelId} using fallback endpoint...`);
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${envConfig.hfApiKey.trim()}`,
+            'Content-Type': contentType,
+          },
+          body,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        return await this.handleApiResponse(response, modelId);
+      } catch (error) {
+        lastError = error;
+
+        if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+          const timeoutErr = new Error(
+            `Hugging Face inference request timed out after ${timeoutMs / 1000}s`
+          );
+          timeoutErr.code = 'INFERENCE_TIMEOUT';
+          throw timeoutErr;
+        }
+
+        // If invalid API key, fallback won't help, throw immediately
+        if (error.code === 'INVALID_API_KEY') {
+          throw error;
+        }
+
+        if (!isFallback) {
+          logger.warn(`[HuggingFace] Primary endpoint failed (${error.message}). Attempting fallback endpoint...`);
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
    * Query an Audio Inference Model (e.g., Whisper Speech-to-Text)
-   * @param {string} modelId - Hugging Face model identifier (e.g., 'openai/whisper-large-v3')
+   * @param {string} modelId - Hugging Face model identifier (e.g., 'openai/whisper-small')
    * @param {Buffer} audioBuffer - Raw audio file buffer
    * @returns {Promise<Object>}
    */
@@ -37,29 +104,9 @@ class HuggingFaceClient {
       throw err;
     }
 
-    const url = `${this.primaryBaseUrl}/${modelId}`;
     logger.info(`[HuggingFace] Dispatching audio STT inference to ${modelId} (${Math.round(audioBuffer.length / 1024)} KB)...`);
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${envConfig.hfApiKey}`,
-          'Content-Type': 'application/octet-stream',
-        },
-        body: audioBuffer,
-        signal: AbortSignal.timeout(envConfig.hfRequestTimeoutMs),
-      });
-
-      return await this.handleApiResponse(response, modelId);
-    } catch (error) {
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        const timeoutErr = new Error(`Hugging Face inference request timed out after ${envConfig.hfRequestTimeoutMs / 1000}s`);
-        timeoutErr.code = 'INFERENCE_TIMEOUT';
-        throw timeoutErr;
-      }
-      throw error;
-    }
+    return await this.sendInferenceRequest(modelId, audioBuffer, 'application/octet-stream');
   }
 
   /**
@@ -81,29 +128,9 @@ class HuggingFaceClient {
       throw err;
     }
 
-    const url = `${this.primaryBaseUrl}/${modelId}`;
     logger.info(`[HuggingFace] Dispatching text emotion classification to ${modelId}...`);
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${envConfig.hfApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ inputs: textInput }),
-        signal: AbortSignal.timeout(envConfig.hfRequestTimeoutMs),
-      });
-
-      return await this.handleApiResponse(response, modelId);
-    } catch (error) {
-      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        const timeoutErr = new Error(`Hugging Face inference request timed out after ${envConfig.hfRequestTimeoutMs / 1000}s`);
-        timeoutErr.code = 'INFERENCE_TIMEOUT';
-        throw timeoutErr;
-      }
-      throw error;
-    }
+    return await this.sendInferenceRequest(modelId, JSON.stringify({ inputs: textInput }), 'application/json');
   }
 
   /**
@@ -124,7 +151,7 @@ class HuggingFaceClient {
       errorDetails = errorJson;
 
       if (errorJson.error) {
-        errorMessage = errorJson.error;
+        errorMessage = Array.isArray(errorJson.error) ? errorJson.error.join(', ') : errorJson.error;
       }
 
       if (response.status === 401) {

@@ -5,7 +5,7 @@ const logger = require('../utils/logger.util');
 
 /**
  * Speech To Text Service
- * Processes audio files using Hugging Face Whisper inference models (e.g., openai/whisper-large-v3)
+ * Processes audio files using Hugging Face Whisper inference models (e.g., openai/whisper-small)
  */
 class SpeechToTextService {
   /**
@@ -50,7 +50,6 @@ class SpeechToTextService {
         logger.warn('[STT] Empty transcript returned from Hugging Face model. Using fallback.');
       } catch (hfError) {
         logger.warn(`[STT] Hugging Face inference failed: [${hfError.code || 'ERROR'}] ${hfError.message}`);
-        // If it's a critical timeout or error without fallback requested, we can still fall back for hackathon demo
       }
     } else if (!huggingFaceClient.hasApiKey()) {
       logger.info('[STT] HUGGINGFACE_API_KEY is not set. Using domain-tuned Formula 1 acoustic fallback.');
