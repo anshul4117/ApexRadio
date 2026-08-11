@@ -23,6 +23,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
 import AudioWaveformVisualizer from '../components/ui/AudioWaveformVisualizer';
 import ExplainabilityPanel from '../components/ui/ExplainabilityPanel';
+import AudioVerificationCard from '../components/ui/AudioVerificationCard';
 import { useRadio } from '../context/RadioContext';
 import { useLap } from '../context/LapContext';
 import { useTypewriter } from '../hooks/useTypewriter';
@@ -35,6 +36,8 @@ export const RadioAnalysisPage = () => {
     uploadProgress,
     analysisStep,
     error: radioError,
+    uploadedAudioUrl,
+    uploadedAudioFile,
     analyzeFile,
     analyzePreset,
     resetAnalysisState,
@@ -204,7 +207,7 @@ export const RadioAnalysisPage = () => {
                   <div className="space-y-1.5 max-w-sm mx-auto">
                     <p className="text-xs font-semibold text-zinc-950 dark:text-white capitalize">
                       {analysisStep === 'uploading' && `Uploading Radio Transmission (${uploadProgress}%)...`}
-                      {analysisStep === 'transcribing' && 'Transcribing with Hugging Face Whisper Large v3...'}
+                      {analysisStep === 'transcribing' && 'Transcribing with Groq Whisper Large v3 LPU...'}
                       {analysisStep === 'analyzing' && 'Extracting Vocal Pitch Jitter & Acoustic Emotion...'}
                       {analysisStep === 'correlating' && 'Correlating Biometrics with CAN Bus Telemetry...'}
                       {analysisStep === 'completed' && 'Analysis Completed! Updating Dashboard...'}
@@ -454,6 +457,13 @@ export const RadioAnalysisPage = () => {
         </div>
 
       </div>
+
+      {/* Side-by-Side Audio Playback & Transcript Verification Section */}
+      <AudioVerificationCard
+        uploadedAudioUrl={uploadedAudioUrl}
+        uploadedAudioFile={uploadedAudioFile}
+        currentAnalysis={currentAnalysis}
+      />
 
       {/* AI Decision Explainability Section */}
       <ExplainabilityPanel

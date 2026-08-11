@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { radioApi } from '../services/api';
 import { useLap } from './LapContext';
 import { useAlerts } from './AlertsContext';
 import { useDemo } from './DemoContext';
 
-const RadioContext = createContext(null);
+const RadioContext = createContext();
 
 const DEFAULT_ANALYSIS = {
-  id: 'tx_seed_001',
+  id: 'default_tx_01',
   timestamp: new Date().toISOString(),
   driver: 'Max Verstappen',
   driverId: 'VER-01',
@@ -49,6 +49,20 @@ export const RadioProvider = ({ children }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysisStep, setAnalysisStep] = useState('idle'); // 'idle' | 'uploading' | 'transcribing' | 'analyzing' | 'correlating' | 'completed' | 'error'
   const [error, setError] = useState(null);
+
+  // Audio Playback Verification states
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState(null);
+  const [uploadedAudioFile, setUploadedAudioFile] = useState(null);
+  const previousUrlRef = useRef(null);
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previousUrlRef.current) {
+        URL.revokeObjectURL(previousUrlRef.current);
+      }
+    };
+  }, []);
 
   // Fetch initial history from backend
   useEffect(() => {
@@ -93,10 +107,8 @@ export const RadioProvider = ({ children }) => {
 
       if (isStressed || isFatigued) {
         addAlert({
-          title: isStressed
-            ? `Acoustic Stress Spike: ${record.driver} (${record.emotion.driverState} ${stress}%)`
-            : `Driver Fatigue & Telemetry Concern (${record.driver})`,
-          severity: stress >= 75 ? 'Critical' : 'High',
+          title: isStressed ? 'Driver Stress Surge' : 'Driver Fatigue Detected',
+          severity: stress >= 75 ? 'critical' : 'high',
           severityKey: stress >= 75 ? 'critical' : 'high',
           driver: `${record.driver} (${record.car || 'Car #1'})`,
           driverState: record.emotion.driverState,
@@ -134,6 +146,15 @@ export const RadioProvider = ({ children }) => {
       setAnalysisStep('uploading');
       setError(null);
 
+      // Create persistent Object URL for browser audio playback
+      if (previousUrlRef.current) {
+        URL.revokeObjectURL(previousUrlRef.current);
+      }
+      const audioUrl = URL.createObjectURL(file);
+      previousUrlRef.current = audioUrl;
+      setUploadedAudioUrl(audioUrl);
+      setUploadedAudioFile(file);
+
       try {
         const formData = new FormData();
         formData.append('audio', file);
@@ -156,11 +177,11 @@ export const RadioProvider = ({ children }) => {
         // Simulate seamless pipeline progression
         setTimeout(() => {
           setAnalysisStep((prev) => (prev === 'transcribing' ? 'analyzing' : prev));
-        }, 450);
+        }, 350);
 
         setTimeout(() => {
           setAnalysisStep((prev) => (prev === 'analyzing' ? 'correlating' : prev));
-        }, 900);
+        }, 700);
 
         const response = await radioApi.analyzeAudio(formData, onProgress);
 
@@ -195,9 +216,12 @@ export const RadioProvider = ({ children }) => {
       setAnalysisStep('transcribing');
       setError(null);
 
+      // Preset mode has no raw audio file uploaded directly
+      setUploadedAudioFile(null);
+
       try {
-        setTimeout(() => setAnalysisStep('analyzing'), 350);
-        setTimeout(() => setAnalysisStep('correlating'), 700);
+        setTimeout(() => setAnalysisStep('analyzing'), 250);
+        setTimeout(() => setAnalysisStep('correlating'), 500);
 
         const response = await radioApi.analyzeAudio({
           sampleHint: presetPayload.sampleHint || presetPayload.title,
@@ -216,10 +240,10 @@ export const RadioProvider = ({ children }) => {
 
         throw new Error(response.message || 'Preset analysis failed');
       } catch (err) {
-        const message = err.message || 'Failed to analyze preset';
+        const message = err.message || 'Failed to analyze radio preset';
         setError(message);
         setAnalysisStep('error');
-        showToast('Preset Analysis Error', message, 'error');
+        showToast('Analysis Error', message, 'error');
         return { success: false, error: message };
       } finally {
         setIsAnalyzing(false);
@@ -244,6 +268,8 @@ export const RadioProvider = ({ children }) => {
         uploadProgress,
         analysisStep,
         error,
+        uploadedAudioUrl,
+        uploadedAudioFile,
         analyzeFile,
         analyzePreset,
         resetAnalysisState,
