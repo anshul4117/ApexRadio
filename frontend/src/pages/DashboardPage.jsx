@@ -21,36 +21,22 @@ import {
   Radio,
   Heart,
   Mic,
+  FileSpreadsheet,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-} from 'recharts';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
 import ExplainabilityPanel from '../components/ui/ExplainabilityPanel';
+import StressLapCorrelationCard from '../components/ui/StressLapCorrelationCard';
+import HeroCorrelationChart from '../components/ui/HeroCorrelationChart';
 import { useRadio } from '../context/RadioContext';
 import { useLap } from '../context/LapContext';
 import { useAlerts } from '../context/AlertsContext';
 import { useDemo } from '../context/DemoContext';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { StatCardSkeleton, ChartSkeleton } from '../components/ui/SkeletonLoader';
-
-const formatSec = (sec) => {
-  if (!sec || isNaN(sec)) return '';
-  const mins = Math.floor(sec / 60);
-  const secs = (sec % 60).toFixed(2);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-};
 
 export const DashboardPage = () => {
   const { currentAnalysis, history, isAnalyzing } = useRadio();
@@ -83,42 +69,16 @@ export const DashboardPage = () => {
 
   const riskTier = correlation?.riskTier || (isElevated ? 'High' : isFatigued ? 'Medium' : 'Nominal');
   const estimatedHR = isElevated ? 168 : isFatigued ? 152 : 135;
-  const chartData = lapStats?.chartData || [];
 
   // Session Health status
   const sessionHealth = isElevated ? 'Degraded (Stress High)' : isFatigued ? 'Fatigue Alert' : 'Nominal (Pace Stable)';
-
-  const CustomChartTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="p-3 bg-zinc-950 text-white dark:bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl text-xs space-y-1.5 backdrop-blur-md">
-          <div className="font-semibold flex justify-between gap-4 border-b border-zinc-800 pb-1">
-            <span className="text-zinc-400">Lap {label}</span>
-            <span className="font-tabular text-white font-mono">{data.lapTime}</span>
-          </div>
-          <div className="flex justify-between gap-4 text-[11px] text-zinc-400">
-            <span>5-Lap Moving Avg:</span>
-            <span className="font-tabular text-zinc-200 font-mono">{data.movingAvg}</span>
-          </div>
-          {data.stressEvent && (
-            <div className="text-[11px] text-rose-400 font-medium pt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-              {data.stressEvent}
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Pit Wall Telemetry Top Control Header */}
       <SectionHeader
         title="Live Race Engineering Console"
-        subtitle="Real-time multi-modal acoustic biometrics, CAN bus telemetry correlation and autonomous strategy triggers"
+        subtitle="Grand Prix Telemetry Fusion: Stress ↔ Lap Performance Correlation, Voice Biometrics, CAN Bus Telemetry & Strategy Directives"
         badge={
           <div className="flex items-center gap-2">
             <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'fatigued' : 'nominal'} size="sm" dot>
@@ -131,7 +91,7 @@ export const DashboardPage = () => {
           </div>
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant={isLiveDemoRunning ? 'danger' : 'primary'}
               size="sm"
@@ -150,10 +110,17 @@ export const DashboardPage = () => {
         }
       />
 
-      {/* PRIMARY HERO METRIC CARDS (Top Priority Hierarchy) */}
+      {/* 1. GRAND PRIX CORE DELIVERABLE: STRESS ↔ LAP PERFORMANCE CORRELATION SUMMARY */}
+      <StressLapCorrelationCard
+        correlation={correlation}
+        currentAnalysis={currentAnalysis}
+        lapStats={lapStats}
+      />
+
+      {/* 2. PRIMARY HERO METRIC CARDS (Biometrics & Performance Risk Score) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         
-        {/* HERO CARD 1: Driver Status & Biometric Load */}
+        {/* HERO CARD 1: Driver Biometric Status */}
         <div className="rounded-2xl border-2 border-zinc-900/10 dark:border-zinc-100/15 bg-gradient-to-b from-zinc-50/80 to-white dark:from-zinc-900/60 dark:to-[#0e0e11] p-5 shadow-sm space-y-4 relative overflow-hidden card-hover-lift">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -164,7 +131,7 @@ export const DashboardPage = () => {
                 <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
                   Driver Biometric Status
                 </h3>
-                <p className="text-[11px] text-zinc-500 font-mono">Max Verstappen · Car #1</p>
+                <p className="text-[11px] text-zinc-500 font-mono">{activeDriverName} · Car #1</p>
               </div>
             </div>
 
@@ -176,7 +143,6 @@ export const DashboardPage = () => {
             </StatusBadge>
           </div>
 
-          {/* Stress Score Gauge & Readout */}
           <div className="space-y-2 pt-1">
             <div className="flex items-baseline justify-between">
               <div className="space-y-0.5">
@@ -199,7 +165,6 @@ export const DashboardPage = () => {
               </div>
             </div>
 
-            {/* Dual Layer Progress Bar */}
             <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-200/50 dark:border-zinc-700/50">
               <div
                 className={`h-full rounded-full transition-all duration-700 ${
@@ -210,7 +175,6 @@ export const DashboardPage = () => {
             </div>
           </div>
 
-          {/* Acoustic Telemetry Breakdown Strip */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/80 text-xs">
             <div className="p-2 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 space-y-0.5">
               <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Pitch Jitter</span>
@@ -238,7 +202,7 @@ export const DashboardPage = () => {
                 <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
                   Performance Risk Score
                 </h3>
-                <p className="text-[11px] text-zinc-500 font-mono">Tire Deg + Stress Correlation</p>
+                <p className="text-[11px] text-zinc-500 font-mono">Correlation & Pace Degradation</p>
               </div>
             </div>
 
@@ -264,9 +228,9 @@ export const DashboardPage = () => {
               </div>
 
               <div className="text-right">
-                <span className="text-[11px] text-zinc-400 block font-mono">Pace Degradation</span>
+                <span className="text-[11px] text-zinc-400 block font-mono">Performance Degradation</span>
                 <span className="text-lg font-semibold text-rose-600 dark:text-rose-400 font-tabular font-mono">
-                  {lapStats?.paceDeltaVsAvg || '+0.84s / lap'}
+                  {correlation?.performanceDegradationStr || '+1.58 s/lap'}
                 </span>
               </div>
             </div>
@@ -289,9 +253,9 @@ export const DashboardPage = () => {
               </span>
             </div>
             <div className="p-2 rounded-lg bg-zinc-100/60 dark:bg-zinc-800/40 space-y-0.5">
-              <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Tire Wear Delta</span>
-              <span className="font-semibold font-mono text-zinc-900 dark:text-zinc-100">
-                -3.2% stint pace
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wide block">Pace Loss %</span>
+              <span className="font-semibold font-mono text-rose-500">
+                {correlation?.paceLossPercentageStr || '+1.76%'}
               </span>
             </div>
           </div>
@@ -308,7 +272,7 @@ export const DashboardPage = () => {
                 <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
                   Stint Pace Telemetry
                 </h3>
-                <p className="text-[11px] text-zinc-500 font-mono">18 Laps · Soft Compound</p>
+                <p className="text-[11px] text-zinc-500 font-mono">{activeTotalLaps} Laps · Soft Compound</p>
               </div>
             </div>
 
@@ -336,14 +300,16 @@ export const DashboardPage = () => {
           </div>
 
           <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
-            <span>Rolling 5-Lap Avg:</span>
-            <strong className="font-mono text-zinc-900 dark:text-zinc-100">{lapStats?.last5Avg || '1:30.660'}</strong>
+            <span>Lap Time Trend:</span>
+            <strong className={`font-mono ${lapStats?.lapTrend === 'worsening' ? 'text-rose-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
+              {lapStats?.lapTrend ? lapStats.lapTrend.toUpperCase() : 'WORSENING'}
+            </strong>
           </div>
         </div>
 
       </div>
 
-      {/* SECOND MOST IMPORTANT SECTION: LATEST AI STRATEGY DIRECTIVE */}
+      {/* 3. AI STRATEGY DIRECTIVE BANNER (Derived from Correlation Result) */}
       <div className="rounded-2xl border-2 border-zinc-950 dark:border-white bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 p-5 sm:p-6 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800 dark:border-zinc-200">
           <div className="flex items-center gap-2.5">
@@ -352,17 +318,17 @@ export const DashboardPage = () => {
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold tracking-widest text-rose-400 dark:text-rose-600 block">
-                Autonomous Pit Wall Directive
+                AI Tactical Directive ({correlation?.correlationLevel || 'High'} Correlation)
               </span>
               <h4 className="text-sm sm:text-base font-bold tracking-tight">
-                {currentAnalysis?.recommendation?.category || 'Radio Brevity Directive'}
+                {correlation?.recommendation?.category || 'Radio Brevity & Tire Strategy'}
               </h4>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="text-xs font-mono px-3 py-1 rounded-full bg-zinc-900 dark:bg-white text-zinc-300 dark:text-zinc-800 border border-zinc-800 dark:border-zinc-300">
-              Target Pit: <strong className="text-white dark:text-black">{currentAnalysis?.recommendation?.pitWindow || 'Lap 21'}</strong>
+              Target Pit: <strong className="text-white dark:text-black">{correlation?.recommendation?.pitWindow || 'Lap 21'}</strong>
             </div>
 
             <button
@@ -381,32 +347,27 @@ export const DashboardPage = () => {
         </div>
 
         <p className="text-sm sm:text-base font-medium leading-relaxed italic opacity-95">
-          "{currentAnalysis?.recommendation?.action || 'Enforce radio silence through Sector 2 high-G corners and prepare undercut pit window.'}"
+          "{correlation?.recommendation?.action || 'Driver stress is affecting pace. Consider reducing radio traffic and evaluating tire condition.'}"
         </p>
 
         <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 dark:text-zinc-600 pt-1">
-          <span>Root Cause: High pitch jitter (+42.5 Hz) detected on Lap 18 communication</span>
+          <span>Trigger: Driver stress spike at Lap {correlation?.stressLap || 18} &rarr; Performance Degradation {correlation?.performanceDegradationStr || '+1.58 s/lap'}</span>
           <Link to="/dashboard/radio" className="hover:underline flex items-center gap-1 text-white dark:text-zinc-950 font-medium">
             Review voice transmission <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
 
-      {/* AI Decision Explainability Section */}
-      <ExplainabilityPanel
-        recommendation={correlation?.recommendation || currentAnalysis?.recommendation}
-        emotion={emotion}
-        lapStats={lapStats}
-        correlation={correlation}
-        transcript={currentAnalysis?.transcript}
-      />
-
-      {/* MAIN 2-COLUMN TELEMETRY & RADIO STREAM */}
+      {/* 4. MAIN HERO CORRELATION CHART & RECENT RADIO FEED */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left 2-Cols: Live Radio Transcripts & Recharts Lap Curve */}
+        {/* Left 2-Cols: Hero Correlation Recharts Canvas */}
         <div className="lg:col-span-2 space-y-6">
-          
+          <HeroCorrelationChart
+            correlation={correlation}
+            lapStats={lapStats}
+          />
+
           {/* Live Radio Transmissions Feed */}
           <Card
             title="Cockpit Voice Transmissions"
@@ -437,7 +398,7 @@ export const DashboardPage = () => {
                         <span className="font-semibold text-xs text-zinc-950 dark:text-white">
                           {tx.driver} ({tx.car || 'Car #1'})
                         </span>
-                        <Badge variant="outline" size="sm">Lap {tx.lap || 18}</Badge>
+                        <Badge variant="outline" size="sm">Lap {tx.lap || activeCurrentLap}</Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-zinc-400 text-xs font-tabular font-mono">
@@ -466,154 +427,55 @@ export const DashboardPage = () => {
               })}
             </div>
           </Card>
-
-          {/* Animated Recharts Lap Telemetry Curve */}
-          <Card
-            title="Lap Pace Degradation & Rolling Average"
-            subtitle="Multi-lap telemetry pace drift overlaid with rolling 5-lap baseline"
-            action={<Badge variant="white" size="sm">Telemetry CAN</Badge>}
-          >
-            <div className="h-64 sm:h-72 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} stroke="currentColor" />
-                  <XAxis
-                    dataKey="lap"
-                    stroke="#71717a"
-                    fontSize={11}
-                    tickLine={false}
-                    tickFormatter={(val) => `L${val}`}
-                  />
-                  <YAxis
-                    domain={['dataMin - 0.5', 'dataMax + 0.5']}
-                    stroke="#71717a"
-                    fontSize={11}
-                    tickLine={false}
-                    tickFormatter={(val) => `${val}s`}
-                    width={45}
-                  />
-                  <Tooltip content={<CustomChartTooltip />} />
-                  <Legend
-                    verticalAlign="top"
-                    height={36}
-                    iconType="circle"
-                    formatter={(value) => (
-                      <span className="text-xs text-zinc-700 dark:text-zinc-300 font-medium">
-                        {value === 'lapTimeSec' ? 'Actual Lap Time (s)' : '5-Lap Moving Average (s)'}
-                      </span>
-                    )}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="lapTimeSec"
-                    stroke="#18181b"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: '#18181b', strokeWidth: 1 }}
-                    activeDot={{ r: 5, fill: '#f43f5e' }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                    animationEasing="ease-in-out"
-                    className="dark:stroke-white dark:dot-fill-white"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="movingAvgSec"
-                    stroke="#f43f5e"
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                    dot={false}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                    animationEasing="ease-in-out"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
         </div>
 
-        {/* Right 1-Col: Live Strategy & Telemetry Anomaly Panel */}
+        {/* Right 1-Col: Telemetry Anomalies & Explainability Breakdown */}
         <div className="space-y-6">
           
-          {/* Quick Pit Window Summary */}
+          {/* Quick Correlation Metrics Panel */}
           <Card
-            title="Pit Window Telemetry"
-            subtitle="Undercut & overcut predictions"
-            badge={<Badge variant="outline" size="sm">Hard Compound</Badge>}
+            title="Correlation Breakdown"
+            subtitle="Grand Prix Decision Metrics"
+            badge={<Badge variant="outline" size="sm">{correlation?.correlationLevel || 'High'}</Badge>}
           >
             <div className="space-y-3 text-xs">
               <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 space-y-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold block">Optimum Box Lap</span>
-                <span className="text-2xl font-bold font-mono text-zinc-950 dark:text-white">Lap 21</span>
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold block">
+                  Stress ↔ Pace Relationship
+                </span>
+                <span className="text-lg font-bold font-mono text-zinc-950 dark:text-white">
+                  {correlation?.correlationLevel || 'High'} Correlation
+                </span>
                 <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  Undercut advantage over Mercedes #44 estimated at +1.4s with fresh Hard compound.
+                  Driver stress increase (+42.5 Hz jitter) directly matches pace drop of {correlation?.performanceDegradationStr || '+1.58 s/lap'}.
                 </p>
               </div>
 
               <div className="space-y-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
                 <div className="flex justify-between items-center text-zinc-500">
-                  <span>Pit Stop Loss Delta:</span>
-                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">19.4s</span>
+                  <span>Pre-Stress Pace:</span>
+                  <span className="font-mono font-medium text-emerald-500">{correlation?.avgBeforeStressTime || '1:29.540'}</span>
                 </div>
                 <div className="flex justify-between items-center text-zinc-500">
-                  <span>Tire Life Remaining:</span>
-                  <span className="font-mono font-medium text-rose-500">32% (Thermal drop)</span>
+                  <span>Post-Stress Pace:</span>
+                  <span className="font-mono font-medium text-rose-500">{correlation?.avgAfterStressTime || '1:31.120'}</span>
                 </div>
                 <div className="flex justify-between items-center text-zinc-500">
-                  <span>Track Position on Exit:</span>
-                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">P2 (Clear air)</span>
+                  <span>Pace Loss %:</span>
+                  <span className="font-mono font-medium text-rose-500">{correlation?.paceLossPercentageStr || '+1.76%'}</span>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Race Timeline Quick Preview */}
-          <Card
-            title="Chronological Event Stream"
-            subtitle="Latest multi-track race telemetry events"
-            footer={
-              <Link to="/dashboard/timeline" className="text-xs text-zinc-900 dark:text-zinc-100 hover:underline font-medium flex items-center justify-between">
-                <span>View Full Race Timeline</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            }
-          >
-            <div className="space-y-3 text-xs">
-              <div className="flex items-start gap-2.5 pb-2.5 border-b border-zinc-100 dark:border-zinc-800/60">
-                <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0 animate-pulse" />
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-zinc-900 dark:text-white">Lap 18</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">14:22:30 UTC</span>
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">Driver vocal stress spike recorded (+42.5 Hz jitter).</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 pb-2.5 border-b border-zinc-100 dark:border-zinc-800/60">
-                <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-zinc-900 dark:text-white">Lap 18</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">14:22:00 UTC</span>
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">Performance Risk Score raised to 61% (High Risk).</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-zinc-900 dark:text-white">Lap 14</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">14:12:00 UTC</span>
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">Fastest stint lap recorded (1:29.420).</p>
-                </div>
-              </div>
-            </div>
-          </Card>
+          {/* AI Decision Explainability Section */}
+          <ExplainabilityPanel
+            recommendation={correlation?.recommendation || currentAnalysis?.recommendation}
+            emotion={emotion}
+            lapStats={lapStats}
+            correlation={correlation}
+            transcript={currentAnalysis?.transcript}
+          />
 
         </div>
 

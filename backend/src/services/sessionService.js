@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger.util');
+const correlationService = require('./correlationService');
 
 /**
  * Unified Race Session Manager (Singleton)
@@ -8,7 +9,7 @@ const logger = require('../utils/logger.util');
  * - Driver profile & session time
  * - Radio Speech-to-Text transcript & Acoustic Stress/Emotion
  * - Lap Time CSV Telemetry & Moving Averages
- * - Multi-Factor Performance Risk Score & AI Recommendation
+ * - Grand Prix Stress ↔ Lap Performance Correlation Engine
  */
 class SessionService {
   constructor() {
@@ -33,27 +34,33 @@ class SessionService {
       lapData: [],
       lapStats: null,
       correlation: {
+        stressLap: 18,
+        stressScore: 78,
+        driverState: 'Stressed',
+        avgBeforeStressSec: 89.540,
+        avgBeforeStressTime: '1:29.540',
+        avgAfterStressSec: 91.120,
+        avgAfterStressTime: '1:31.120',
+        fastestLap: { lap: 14, lapTime: '1:29.420', lapTimeSec: 89.420 },
+        slowestLap: { lap: 18, lapTime: '1:31.240', lapTimeSec: 91.240 },
+        performanceDegradationSec: 1.58,
+        performanceDegradationStr: '+1.58 s/lap',
+        paceLossPercentage: 1.76,
+        paceLossPercentageStr: '+1.76%',
+        correlationLevel: 'High',
+        correlationLevelBadgeVariant: 'critical',
+        engineeringInsight: 'Driver stress increased at Lap 18 and lap performance worsened by 1.58 seconds per lap (+1.76% pace loss) afterward.',
+        recommendation: {
+          category: 'Radio Brevity & Tire Strategy',
+          action: 'Driver stress is affecting pace. Consider reducing radio traffic and evaluating tire condition.',
+          pitWindow: 'Lap 21 (Hard compound)',
+          urgency: 'Immediate',
+          correlationLevel: 'High',
+        },
         riskScore: 61,
         riskTier: 'High',
         riskBadgeVariant: 'critical',
-        riskFactors: [
-          'Driver stress detected with 78% confidence (+42.5 Hz pitch jitter)',
-          'Lap 18 sector 2 time degraded by +1.40s vs stint best',
-          'Front-left tire degradation reached 40.4%',
-          'Aggregate risk score reached 61% (High Severity)',
-        ],
-        weights: {
-          emotionScore: 40,
-          lapTrend: 30,
-          stressFrequency: 20,
-          sessionContext: 10,
-        },
-        recommendation: {
-          category: 'Radio Brevity Directive',
-          action: 'Enforce radio silence through Sector 2 high-G corners and prepare undercut pit window.',
-          pitWindow: 'Lap 21',
-          urgency: 'Immediate',
-        },
+        confidence: 94.2,
       },
       sessionTimestamp: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -68,7 +75,7 @@ class SessionService {
   }
 
   /**
-   * Update radio analysis results into unified session
+   * Update radio analysis results into unified session & re-correlate
    */
   updateRadioData({ transcript, emotion, confidence, driverName, lap, recommendation }) {
     this.session.transcript = transcript || this.session.transcript;
@@ -84,18 +91,34 @@ class SessionService {
       this.session.currentLap = lap;
       if (lap > this.session.totalLaps) this.session.totalLaps = lap;
     }
-    if (recommendation) {
+
+    // Re-correlate with active lap telemetry
+    if (this.session.lapStats) {
+      this.session.correlation = correlationService.correlate(
+        this.session.lapStats,
+        {
+          emotion: {
+            driverState: this.session.driverState,
+            stressScore: this.session.stressScore,
+            pitchJitter: this.session.pitchJitter,
+            speechCadence: this.session.speechCadence,
+          },
+          lap: this.session.currentLap,
+          confidence: this.session.confidence,
+        }
+      );
+    } else if (recommendation) {
       this.session.correlation.recommendation = recommendation;
     }
 
     this.session.sessionTimestamp = new Date().toISOString();
     this.session.updatedAt = new Date().toISOString();
 
-    logger.info('Race session updated with radio audio analysis', {
+    logger.info('Race session updated with radio analysis & re-correlated', {
       driver: this.session.driverName,
       state: this.session.driverState,
       stress: this.session.stressScore,
-      lap: this.session.currentLap,
+      correlationLevel: this.session.correlation?.correlationLevel,
     });
 
     return this.session;
@@ -117,6 +140,21 @@ class SessionService {
 
     if (correlation) {
       this.session.correlation = correlation;
+    } else if (lapStats) {
+      // Re-correlate if not already provided
+      this.session.correlation = correlationService.correlate(
+        lapStats,
+        {
+          emotion: {
+            driverState: this.session.driverState,
+            stressScore: this.session.stressScore,
+            pitchJitter: this.session.pitchJitter,
+            speechCadence: this.session.speechCadence,
+          },
+          lap: this.session.currentLap,
+          confidence: this.session.confidence,
+        }
+      );
     }
 
     if (driverName) {
@@ -133,7 +171,7 @@ class SessionService {
     logger.info('Race session updated with lap telemetry', {
       lapsCount: this.session.totalLaps,
       currentLap: this.session.currentLap,
-      fastest: lapStats?.fastestLap?.lapTime,
+      correlationLevel: this.session.correlation?.correlationLevel,
     });
 
     return this.session;

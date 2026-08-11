@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   ArrowRight,
   TrendingDown,
+  FileText,
+  Check,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -22,58 +24,75 @@ import { useLap } from '../context/LapContext';
 
 export const RaceTimelinePage = () => {
   const { history, currentAnalysis } = useRadio();
-  const { lapStats } = useLap();
+  const { lapStats, correlation, currentLap, lapsLoaded } = useLap();
   const [filterType, setFilterType] = useState('ALL'); // 'ALL' | 'RADIO' | 'LAP' | 'RISK' | 'AI'
 
-  // Chronological timeline events
+  const activeLap = currentLap || 18;
+  const degradationStr = correlation?.performanceDegradationStr || '+1.58 s/lap';
+  const paceLossStr = correlation?.paceLossPercentageStr || '+1.76%';
+  const correlationLevel = correlation?.correlationLevel || 'High';
+
+  // Chronological timeline events directly reflecting Grand Prix Problem Statement milestones
   const defaultEvents = [
     {
-      id: 'tl_01',
-      lap: 18,
-      time: '14:22:30 UTC',
-      category: 'RADIO',
-      categoryLabel: 'Radio Acoustic Analysis',
-      title: 'Verstappen Radio Transmission: Understeer Warning',
-      description: '"Front left is completely gone guys, massive understeer in Turn 4, I cannot rotate the car." High vocal pitch jitter recorded (+42.5 Hz).',
-      badge: 'Stress 78%',
-      status: 'critical',
-      icon: Radio,
-    },
-    {
-      id: 'tl_02',
-      lap: 18,
-      time: '14:22:15 UTC',
+      id: 'tl_corr_update',
+      lap: activeLap,
+      time: '14:22:45 UTC',
       category: 'AI',
-      categoryLabel: 'Tactical Recommendation',
-      title: 'AI Strategy Trigger: Radio Silence in Sector 2',
-      description: 'System automatically triggered brevity directive to prevent driver cognitive overload during high-G deceleration into Turn 4.',
-      badge: 'Directive Issued',
-      status: 'strategy',
-      icon: Zap,
+      categoryLabel: 'Correlation Updated',
+      title: `Correlation Updated: ${correlationLevel} Correlation (${paceLossStr} Pace Loss)`,
+      description: `Engine computed Before-Stress Pace (${correlation?.avgBeforeStressTime || '1:29.540'}) vs After-Stress Pace (${correlation?.avgAfterStressTime || '1:31.120'}). Performance degradation confirmed at ${degradationStr}. Recommendation: "${correlation?.recommendation?.action || 'Driver stress is affecting pace. Consider reducing radio traffic.'}"`,
+      badge: `${correlationLevel} Correlation`,
+      status: correlationLevel === 'High' ? 'critical' : 'nominal',
+      icon: Activity,
     },
     {
-      id: 'tl_03',
-      lap: 18,
-      time: '14:22:00 UTC',
-      category: 'RISK',
-      categoryLabel: 'Risk Score Escalation',
-      title: 'Performance Risk Score Raised: 22% → 61% (High)',
-      description: 'Multi-factor correlation engine flagged +0.84s pace loss, front-left tire degradation (40.4%), and consecutive high-stress radio callouts.',
-      badge: 'Risk: 61%',
+      id: 'tl_lap_deg',
+      lap: activeLap,
+      time: '14:22:38 UTC',
+      category: 'LAP',
+      categoryLabel: 'Lap Degradation Detected',
+      title: `Lap Degradation Detected: ${degradationStr} Pace Loss`,
+      description: `Telemetry records thermal front-left surface degradation (40.4%). Lap time: 1:31.240 (+1.82s vs stint best). Sector 2 split: 35.610s.`,
+      badge: degradationStr,
+      status: 'critical',
+      icon: TrendingDown,
+    },
+    {
+      id: 'tl_stress_det',
+      lap: activeLap,
+      time: '14:22:34 UTC',
+      category: 'RADIO',
+      categoryLabel: 'Stress Detected',
+      title: `Stress Detected: ${currentAnalysis?.emotion?.stressScore || 78}% Index (+42.5 Hz Jitter)`,
+      description: `Acoustic pitch jitter (+42.5 Hz) and elevated cadence (185 WPM) classified driver state as "${currentAnalysis?.emotion?.driverState || 'Stressed'}".`,
+      badge: `Stress ${currentAnalysis?.emotion?.stressScore || 78}%`,
       status: 'critical',
       icon: Gauge,
     },
     {
-      id: 'tl_04',
-      lap: 18,
-      time: '14:20:00 UTC',
-      category: 'LAP',
-      categoryLabel: 'Lap Completion',
-      title: 'Lap 18 Pace Degradation (+1.82s Delta)',
-      description: 'Lap time: 1:31.240. Sector 2 split: 35.610s (+1.400s vs stint best). Front left surface thermal overheating detected.',
-      badge: 'Lap 18',
+      id: 'tl_transcript_gen',
+      lap: activeLap,
+      time: '14:22:32 UTC',
+      category: 'RADIO',
+      categoryLabel: 'Transcript Generated',
+      title: 'Transcript Generated via Groq Whisper Large v3',
+      description: `"${currentAnalysis?.transcript || 'Front left is completely gone guys, massive understeer in Turn 4, I cannot rotate the car.'}" (Confidence: ${currentAnalysis?.confidence || 94.2}%)`,
+      badge: 'Transcript 200 OK',
       status: 'nominal',
-      icon: Flag,
+      icon: FileText,
+    },
+    {
+      id: 'tl_radio_recv',
+      lap: activeLap,
+      time: '14:22:30 UTC',
+      category: 'RADIO',
+      categoryLabel: 'Radio Received',
+      title: 'Radio Received: Turn 4 Cockpit Transmission',
+      description: 'Incoming radio audio captured from Car #1 (Max Verstappen) during heavy braking into Turn 4.',
+      badge: 'Radio Ingested',
+      status: 'nominal',
+      icon: Radio,
     },
     {
       id: 'tl_06',
@@ -96,7 +115,7 @@ export const RaceTimelinePage = () => {
       title: 'Verstappen Sets Fastest Stint Lap (1:29.420)',
       description: 'Purple Sector 1 (28.110s) and Sector 3 (27.100s). Driver acoustic stress recorded at calm baseline (22%). Top speed: 328.9 km/h.',
       badge: 'Fastest Lap',
-      status: 'success',
+      status: 'nominal',
       icon: Flag,
     },
     {
@@ -110,18 +129,6 @@ export const RaceTimelinePage = () => {
       badge: 'Undercut Threat',
       status: 'nominal',
       icon: Zap,
-    },
-    {
-      id: 'tl_09',
-      lap: 8,
-      time: '14:02:00 UTC',
-      category: 'RADIO',
-      categoryLabel: 'Radio Telemetry Check',
-      title: 'Verstappen Radio: Gap Check to Hamilton',
-      description: '"Gap to Lewis behind?" Engineer response: "+2.5s, pace is strong."',
-      badge: 'Stress 18%',
-      status: 'nominal',
-      icon: Radio,
     },
     {
       id: 'tl_10',
@@ -147,8 +154,8 @@ export const RaceTimelinePage = () => {
       {/* Section Header */}
       <SectionHeader
         title="Chronological Race & Telemetry Timeline"
-        subtitle="Multi-track event stream correlating driver radio, vocal emotion spikes, lap deltas, risk score escalations and AI directives"
-        badge={<Badge variant="neutral">Silverstone GP · Laps 1–18</Badge>}
+        subtitle="Multi-track event stream: Radio received &rarr; Transcript generated &rarr; Stress detected &rarr; Lap degradation detected &rarr; Correlation updated"
+        badge={<Badge variant="neutral">Silverstone GP · Laps 1–{lapsLoaded || 18}</Badge>}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 border border-zinc-200/80 dark:border-zinc-800 rounded-lg p-0.5 bg-zinc-50 dark:bg-zinc-900/60 overflow-x-auto">
@@ -168,7 +175,7 @@ export const RaceTimelinePage = () => {
               ))}
             </div>
             <Button variant="secondary" size="sm">
-              Scrub to Lap 18
+              Scrub to Lap {activeLap}
             </Button>
           </div>
         }
@@ -191,8 +198,6 @@ export const RaceTimelinePage = () => {
                   className={`w-1.5 h-1.5 rounded-full ${
                     evt.status === 'critical'
                       ? 'bg-rose-500 animate-pulse'
-                      : evt.status === 'success'
-                      ? 'bg-emerald-500'
                       : evt.status === 'strategy'
                       ? 'bg-amber-400'
                       : 'bg-zinc-900 dark:bg-white'
@@ -209,7 +214,7 @@ export const RaceTimelinePage = () => {
                       <span className="text-zinc-500 text-[11px] font-medium hidden sm:inline">({evt.categoryLabel})</span>
                     </div>
                     <StatusBadge
-                      status={evt.status === 'critical' ? 'critical' : evt.status === 'strategy' ? 'strategy' : 'nominal'}
+                      status={evt.status === 'critical' ? 'critical' : 'nominal'}
                       size="sm"
                     >
                       {evt.badge}
