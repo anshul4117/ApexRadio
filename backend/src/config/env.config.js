@@ -3,10 +3,30 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Production-safe allowlist of frontend domains
+const defaultAllowedOrigins = [
+  'https://apex-radio-xi.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+const customOrigins = [];
+if (process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL.split(',').forEach((o) => customOrigins.push(o.trim()));
+}
+if (process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN.split(',').forEach((o) => customOrigins.push(o.trim()));
+}
+
+const allowedOrigins = Array.from(
+  new Set([...defaultAllowedOrigins, ...customOrigins].filter(Boolean).map((o) => o.replace(/\/+$/, '')))
+);
+
 const envConfig = {
   port: process.env.PORT || 5001,
   nodeEnv: process.env.NODE_ENV || 'development',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  allowedOrigins,
+  corsOrigin: allowedOrigins,
   jwtSecret: process.env.JWT_SECRET || 'apexradio-ai-hackathon-jwt-secret-key-2026',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   uploadDir: path.join(__dirname, '../../uploads'),

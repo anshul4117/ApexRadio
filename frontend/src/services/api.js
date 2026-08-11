@@ -1,8 +1,27 @@
 import axios from 'axios';
 
+// Normalize VITE_API_URL to ensure /api suffix is present when pointing to full backend host
+const getBaseUrl = () => {
+  let envUrl = import.meta.env.VITE_API_URL || '/api';
+  envUrl = envUrl.trim();
+
+  // If pointing to absolute URL (e.g. https://apexradio.onrender.com), ensure /api is attached
+  if (envUrl.startsWith('http://') || envUrl.startsWith('https://')) {
+    const cleanUrl = envUrl.replace(/\/+$/, '');
+    if (!cleanUrl.endsWith('/api')) {
+      return `${cleanUrl}/api`;
+    }
+    return cleanUrl;
+  }
+
+  // Local development proxy fallback
+  return envUrl.replace(/\/+$/, '') || '/api';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: getBaseUrl(),
   timeout: 15000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

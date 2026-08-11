@@ -5,8 +5,8 @@ const requestCounts = new Map();
 const WINDOW_MS = 60 * 1000; // 1 minute window
 const MAX_REQUESTS_PER_WINDOW = 120; // 120 requests per minute
 
-// Cleanup expired IP records every 2 minutes
-setInterval(() => {
+// Cleanup expired IP records every 2 minutes with unref to avoid blocking process exit
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [ip, data] of requestCounts.entries()) {
     if (now - data.startTime > WINDOW_MS) {
@@ -14,6 +14,10 @@ setInterval(() => {
     }
   }
 }, 2 * WINDOW_MS);
+
+if (cleanupInterval.unref) {
+  cleanupInterval.unref();
+}
 
 /**
  * Lightweight Demo-Tuned Rate Limiter Middleware
