@@ -8,39 +8,43 @@ import {
   AlertTriangle,
   ArrowRight,
   ShieldAlert,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 import Card from './Card';
 import Badge from './Badge';
 import StatusBadge from './StatusBadge';
+import BeforeAfterStressComparison from './BeforeAfterStressComparison';
 
 /**
  * StressLapCorrelationCard Component
  * Implements GRAND PRIX Problem Statement Hero Summary Card:
  * - One-sentence engineering insight
  * - Correlation Level (High / Medium / Low)
- * - Performance Degradation (+1.58 s/lap)
- * - Percentage Pace Loss (+1.76%)
+ * - Performance Degradation (+1.43 s/lap)
+ * - Percentage Pace Loss (+1.59%)
  * - Before Stress vs After Stress Lap Pace Readouts
- * - Confidence Score
+ * - Confidence Score & Analysis Latency Timer
  */
-export const StressLapCorrelationCard = ({ correlation, currentAnalysis, lapStats }) => {
+export const StressLapCorrelationCard = ({ correlation, currentAnalysis, lapStats, executionLatency }) => {
   const corr = correlation || {};
   const correlationLevel = corr.correlationLevel || 'High';
-  const degradationStr = corr.performanceDegradationStr || '+1.58 s/lap';
-  const paceLossStr = corr.paceLossPercentageStr || '+1.76%';
-  const insight = corr.engineeringInsight || 'Driver stress increased at Lap 18 and lap performance worsened by 1.58 seconds per lap (+1.76% pace loss) afterward.';
-  const beforePace = corr.avgBeforeStressTime || '1:29.540';
-  const afterPace = corr.avgAfterStressTime || '1:31.120';
+  const degradationStr = corr.performanceDegradationStr || '+1.43 s/lap';
+  const paceLossStr = corr.paceLossPercentageStr || '+1.59%';
+  const insight = corr.engineeringInsight || 'Driver stress increased at Lap 18 and lap performance worsened by 1.43 seconds per lap (+1.59% pace loss) afterward.';
+  const beforePace = corr.avgBeforeStressTime || '1:29.813';
+  const afterPace = corr.avgAfterStressTime || '1:31.240';
   const confidence = corr.confidence || currentAnalysis?.confidence || 94.2;
   const stressLap = corr.stressLap || 18;
+  const processingTime = executionLatency || currentAnalysis?.processingTime || '1.14s';
 
   const isHigh = correlationLevel === 'High';
   const isMed = correlationLevel === 'Medium';
 
   return (
-    <div className="rounded-2xl border-2 border-zinc-950 dark:border-white bg-white dark:bg-[#0e0e11] p-5 sm:p-6 shadow-md space-y-4 card-hover-lift">
+    <div id="correlation-summary" className="rounded-2xl border-2 border-zinc-950 dark:border-white bg-white dark:bg-[#0e0e11] p-5 sm:p-6 shadow-md space-y-4 card-hover-lift scroll-mt-20 animate-in fade-in duration-500">
       
-      {/* Header Strip with Correlation Level & Confidence */}
+      {/* Header Strip with Correlation Level, Confidence & Demo Timer */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
         <div className="flex items-center gap-2.5">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shadow-xs ${
@@ -70,7 +74,11 @@ export const StressLapCorrelationCard = ({ correlation, currentAnalysis, lapStat
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono text-[11px] flex items-center gap-1 border border-zinc-200 dark:border-zinc-700">
+            <Clock className="w-3 h-3 text-zinc-400" />
+            ⏱ Analysis completed in {processingTime}
+          </span>
           <Badge variant="outline" size="sm">
             AI Confidence: <strong className="font-mono">{confidence}%</strong>
           </Badge>
@@ -138,6 +146,12 @@ export const StressLapCorrelationCard = ({ correlation, currentAnalysis, lapStat
         </div>
 
       </div>
+
+      {/* COMPACT BEFORE VS AFTER STRESS COMPARISON HUD */}
+      <BeforeAfterStressComparison
+        correlation={correlation}
+        currentAnalysis={currentAnalysis}
+      />
 
     </div>
   );

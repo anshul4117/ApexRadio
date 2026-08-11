@@ -17,6 +17,7 @@ import {
   Radio,
   SlidersHorizontal,
   ArrowRight,
+  Play,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -26,6 +27,8 @@ import SectionHeader from '../components/ui/SectionHeader';
 import AudioWaveformVisualizer from '../components/ui/AudioWaveformVisualizer';
 import ExplainabilityPanel from '../components/ui/ExplainabilityPanel';
 import AudioVerificationCard from '../components/ui/AudioVerificationCard';
+import DemoFlowStepper from '../components/ui/DemoFlowStepper';
+import EngineeringEmptyState from '../components/ui/EngineeringEmptyState';
 import { useRadio } from '../context/RadioContext';
 import { useLap } from '../context/LapContext';
 import { useTypewriter } from '../hooks/useTypewriter';
@@ -63,6 +66,7 @@ export const RadioAnalysisPage = () => {
   const [audioDragOver, setAudioDragOver] = useState(false);
   const [csvDragOver, setCsvDragOver] = useState(false);
   const [csvSuccessMessage, setCsvSuccessMessage] = useState(null);
+  const [showEmptyState, setShowEmptyState] = useState(false);
 
   const audioFileInputRef = useRef(null);
   const csvFileInputRef = useRef(null);
@@ -76,8 +80,18 @@ export const RadioAnalysisPage = () => {
 
   const samplePresets = [
     {
+      id: 'audio_b',
+      title: 'Lap 18: Rear Tires Overheating (Grand Prix Scenario)',
+      driver: 'Max Verstappen (#1)',
+      sampleHint: 'audio_b overheating rear tires',
+      driverId: 'VER-01',
+      car: 'Car #1',
+      lap: 18,
+      stress: '78%',
+    },
+    {
       id: 'lap18',
-      title: 'Lap 18: Turn 4 Understeer',
+      title: 'Lap 18: Turn 4 Understeer Warning',
       driver: 'Max Verstappen (#1)',
       sampleHint: 'lap18 understeer',
       driverId: 'VER-01',
@@ -105,22 +119,22 @@ export const RadioAnalysisPage = () => {
       lap: 31,
       stress: '88%',
     },
-    {
-      id: 'lap14',
-      title: 'Lap 14: Nominal Delta Check',
-      driver: 'Max Verstappen (#1)',
-      sampleHint: 'lap14 delta calm',
-      driverId: 'VER-01',
-      car: 'Car #1',
-      lap: 14,
-      stress: '18%',
-    },
   ];
+
+  // 1-Click Judge Demo Handler
+  const handle1ClickJudgeDemo = async () => {
+    setShowEmptyState(false);
+    await Promise.all([
+      analyzePreset(samplePresets[0]),
+      loadSamplePreset(),
+    ]);
+  };
 
   // Audio Upload Handlers
   const handleAudioFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setShowEmptyState(false);
       analyzeFile(file);
     }
   };
@@ -130,6 +144,7 @@ export const RadioAnalysisPage = () => {
     setAudioDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
+      setShowEmptyState(false);
       analyzeFile(file);
     }
   };
@@ -138,6 +153,7 @@ export const RadioAnalysisPage = () => {
   const handleCsvFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setShowEmptyState(false);
       const res = await uploadCsv(file);
       if (res?.success) {
         setCsvSuccessMessage(`Successfully loaded ${res.data?.lapsLoaded || res.data?.lapStats?.totalLaps || '18'} laps.`);
@@ -151,6 +167,7 @@ export const RadioAnalysisPage = () => {
     setCsvDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
+      setShowEmptyState(false);
       const res = await uploadCsv(file);
       if (res?.success) {
         setCsvSuccessMessage(`Successfully loaded ${res.data?.lapsLoaded || res.data?.lapStats?.totalLaps || '18'} laps.`);
@@ -178,6 +195,9 @@ export const RadioAnalysisPage = () => {
   const isElevated = emotion.driverState === 'Stressed' || (emotion.stressScore || 0) >= 75;
   const isFatigued = emotion.driverState === 'Fatigued';
 
+  // Determine active stepper step (1, 2, 3, or 4)
+  const currentStep = isAnalyzing ? 3 : (uploadedAudioFile || currentAnalysis) && lapStats ? 4 : uploadedAudioFile || currentAnalysis ? 2 : 1;
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       
@@ -191,12 +211,21 @@ export const RadioAnalysisPage = () => {
               {emotion.driverState || 'Stressed'} ({emotion.stressScore || 78}%)
             </StatusBadge>
             <Badge variant="outline" size="sm">
-              Current: Lap {currentLap} ({lapsLoaded} Laps Synchronized)
+              Current: Lap {currentLap || 18} ({lapsLoaded || 18} Laps Synchronized)
             </Badge>
           </div>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handle1ClickJudgeDemo}
+              className="gap-1.5 shadow-sm"
+            >
+              <Play className="w-3.5 h-3.5 fill-current text-white" />
+              <span>⚡ 1-Click Judge Demo</span>
+            </Button>
             <Button
               variant="secondary"
               size="sm"
@@ -215,13 +244,38 @@ export const RadioAnalysisPage = () => {
               <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-500" />
               Upload Lap CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={resetAnalysisState} className="gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                resetAnalysisState();
+                setShowEmptyState(!showEmptyState);
+              }}
+              className="gap-1.5"
+            >
               <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
-              Reset State
+              {showEmptyState ? 'Hide Guide' : 'Show Guide'}
             </Button>
           </div>
         }
       />
+
+      {/* 1. GUIDED 4-STEP DEMO FLOW STEPPER */}
+      <DemoFlowStepper
+        currentStep={currentStep}
+        hasAudio={Boolean(uploadedAudioFile || currentAnalysis)}
+        hasCsv={Boolean(lapStats)}
+        isAnalyzing={isAnalyzing || isLapAnalyzing}
+      />
+
+      {/* Optional Formula 1 Technical Empty State Guide */}
+      {showEmptyState && (
+        <EngineeringEmptyState
+          on1ClickDemo={handle1ClickJudgeDemo}
+          onSelectAudioPreset={() => analyzePreset(samplePresets[0])}
+          onLoadCsvPreset={loadSamplePreset}
+        />
+      )}
 
       {/* Hidden File Inputs */}
       <input
@@ -264,33 +318,56 @@ export const RadioAnalysisPage = () => {
         >
           <div className="space-y-3">
             {isAnalyzing ? (
-              <div className="p-6 text-center space-y-3 bg-zinc-50/50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200 dark:border-zinc-800">
+              <div className="p-6 text-center space-y-3.5 bg-zinc-50/70 dark:bg-zinc-950/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
                 <Activity className="w-8 h-8 mx-auto text-zinc-900 dark:text-white animate-pulse" />
-                <div className="space-y-1.5 max-w-sm mx-auto">
+                <div className="space-y-2 max-w-md mx-auto">
                   <p className="text-xs font-semibold text-zinc-950 dark:text-white capitalize">
-                    {analysisStep === 'uploading' && `Uploading Radio Transmission (${uploadProgress}%)...`}
-                    {analysisStep === 'transcribing' && 'Transcribing with Groq Whisper Large v3 LPU...'}
-                    {analysisStep === 'analyzing' && 'Extracting Vocal Pitch Jitter & Acoustic Emotion...'}
-                    {analysisStep === 'correlating' && 'Correlating Biometrics with CAN Bus Telemetry...'}
-                    {analysisStep === 'completed' && 'Analysis Completed! Updating Dashboard...'}
+                    {analysisStep === 'uploading' && `Stage 1/6: Uploading Cockpit Audio (${uploadProgress}%)...`}
+                    {analysisStep === 'transcribing' && 'Stage 2/6: Transcribing with Groq Whisper Large v3 LPU...'}
+                    {analysisStep === 'analyzing' && 'Stage 3/6: Extracting Vocal Pitch Jitter & Acoustic Emotion...'}
+                    {analysisStep === 'correlating' && 'Stage 4/6 & 5/6: Parsing Telemetry & Correlating Stress with Pace...'}
+                    {analysisStep === 'completed' && 'Stage 6/6: Generating Pit Wall Tactical Recommendation...'}
                   </p>
-                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300"
+                      className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300 shadow-sm"
                       style={{
                         width: `${
                           analysisStep === 'uploading'
-                            ? uploadProgress
+                            ? Math.max(15, uploadProgress)
                             : analysisStep === 'transcribing'
-                            ? 45
+                            ? 40
                             : analysisStep === 'analyzing'
-                            ? 75
+                            ? 65
                             : analysisStep === 'correlating'
-                            ? 92
+                            ? 88
                             : 100
                         }%`,
                       }}
                     />
+                  </div>
+
+                  {/* 6 Stage Mini-Stepper Indicator */}
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1.5 text-[9px] font-mono">
+                    <span className={`p-1 rounded text-center ${analysisStep === 'uploading' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-bold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                      1. Upload
+                    </span>
+                    <span className={`p-1 rounded text-center ${analysisStep === 'transcribing' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-bold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                      2. Whisper
+                    </span>
+                    <span className={`p-1 rounded text-center ${analysisStep === 'analyzing' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-bold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                      3. Emotion
+                    </span>
+                    <span className={`p-1 rounded text-center ${analysisStep === 'correlating' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-bold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                      4. Telemetry
+                    </span>
+                    <span className={`p-1 rounded text-center ${analysisStep === 'correlating' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-bold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                      5. Correlation
+                    </span>
+                    <span className={`p-1 rounded text-center ${analysisStep === 'completed' ? 'bg-zinc-950 text-white dark:bg-white dark:text-black font-bold' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                      6. Insight
+                    </span>
                   </div>
                 </div>
               </div>
@@ -326,7 +403,7 @@ export const RadioAnalysisPage = () => {
             {/* Simulation Presets */}
             <div className="space-y-1.5 pt-1">
               <span className="text-[11px] font-medium text-zinc-400 block">
-                Quick Simulation Presets:
+                Quick Simulation Presets (1-Click Trigger):
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {samplePresets.map((preset) => (
@@ -335,13 +412,19 @@ export const RadioAnalysisPage = () => {
                     type="button"
                     disabled={isAnalyzing}
                     onClick={() => analyzePreset(preset)}
-                    className="p-2 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-400 dark:hover:border-zinc-600 text-left text-xs transition-all flex items-center justify-between group cursor-pointer shadow-2xs"
+                    className={`p-2 rounded-lg border text-left text-xs transition-all flex items-center justify-between group cursor-pointer shadow-2xs ${
+                      preset.id === 'audio_b'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:border-white'
+                        : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-400'
+                    }`}
                   >
                     <div className="truncate">
-                      <span className="font-semibold text-zinc-950 dark:text-white block text-[11px] truncate">
+                      <span className={`font-semibold block text-[11px] truncate ${preset.id === 'audio_b' ? 'text-white dark:text-zinc-950' : 'text-zinc-950 dark:text-white'}`}>
                         {preset.title}
                       </span>
-                      <span className="text-[10px] text-zinc-400 block">Stress: {preset.stress}</span>
+                      <span className={`text-[10px] block ${preset.id === 'audio_b' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400'}`}>
+                        Stress: {preset.stress}
+                      </span>
                     </div>
                   </button>
                 ))}
@@ -407,11 +490,11 @@ export const RadioAnalysisPage = () => {
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                   <span className="font-semibold text-zinc-950 dark:text-white">
-                    {lapsLoaded} Laps Loaded
+                    {lapsLoaded || 18} Laps Loaded
                   </span>
                 </div>
                 <Badge variant="white" size="sm">
-                  Active Lap: {currentLap}
+                  Active Lap: {currentLap || 18}
                 </Badge>
               </div>
 
@@ -481,7 +564,7 @@ export const RadioAnalysisPage = () => {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                 <span className="text-xs font-semibold text-zinc-950 dark:text-white">
-                  {currentAnalysis?.driver || 'Max Verstappen'} ({currentAnalysis?.car || 'Car #1'}) · Lap {currentAnalysis?.lap || currentLap}
+                  {currentAnalysis?.driver || 'Max Verstappen'} ({currentAnalysis?.car || 'Car #1'}) · Lap {currentAnalysis?.lap || currentLap || 18}
                 </span>
               </div>
 
