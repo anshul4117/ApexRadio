@@ -20,7 +20,7 @@ const getBaseUrl = () => {
 
 const api = axios.create({
   baseURL: getBaseUrl(),
-  timeout: 15000,
+  timeout: 60000, // 60s default timeout for API requests
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -47,9 +47,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const errorPayload = error.response?.data?.error || {
-      message: error.response?.data?.message || error.message || 'An unexpected network error occurred',
-      code: error.response?.data?.error?.code || 'NETWORK_ERROR',
+    let message = 'An unexpected network error occurred';
+    if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout'))) {
+      message = 'AI audio analysis timed out. The model server may be experiencing high demand or cold-starting. Please retry in a few moments.';
+    } else if (error.response?.data?.error?.message) {
+      message = error.response.data.error.message;
+    } else if (error.response?.data?.message) {
+      message = error.response.data.message;
+    } else if (error.message) {
+      message = error.message;
+    }
+
+    const errorPayload = {
+      message,
+      code: error.response?.data?.error?.code || (error.code === 'ECONNABORTED' ? 'TIMEOUT_ERROR' : 'NETWORK_ERROR'),
     };
     return Promise.reject(errorPayload);
   }
@@ -65,12 +76,14 @@ export const radioApi = {
   uploadAudio: (formData, onProgress) =>
     api.post('/radio/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 90000, // 90s for audio upload
       onUploadProgress: onProgress,
     }),
   analyzeAudio: (data, onProgress) => {
     const isFormData = data instanceof FormData;
     return api.post('/radio/analyze', data, {
       headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' },
+      timeout: 90000, // 90s for Hugging Face STT inference
       onUploadProgress: onProgress,
     });
   },
@@ -81,6 +94,7 @@ export const lapsApi = {
   uploadCsv: (formData, onProgress) =>
     api.post('/laps/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
       onUploadProgress: onProgress,
     }),
   analyzeLaps: (data) => api.post('/laps/analyze', data),

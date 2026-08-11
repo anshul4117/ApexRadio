@@ -109,9 +109,9 @@ class RadioAnalysisService {
           audioFormat: file?.mimetype?.includes('mp3') ? 'MP3' : 'WAV',
           fileSizeKb: file?.size ? Math.round(file.size / 1024) : 160,
           originalName: file?.originalname || 'radio_transmission.wav',
-          sttModel: envConfig.hfSttModel,
+          sttModel: sttResult.model || envConfig.groqSttModel || 'whisper-large-v3',
           emotionModel: envConfig.hfEmotionModel,
-          inferenceProvider: sttResult.provider || (hasKey ? 'Hugging Face Inference' : 'Motorsport Acoustic Engine'),
+          inferenceProvider: sttResult.provider || 'Groq (Whisper Large v3)',
         },
         processingTime: processingTimeStr,
       };

@@ -33,11 +33,17 @@ const envConfig = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   uploadDir: path.join(__dirname, '../../uploads'),
   
-  // Hugging Face Inference API Configuration
+  // Groq Speech-to-Text API Configuration
+  groqApiKey: process.env.GROQ_API_KEY || '',
+  groqSttModel: process.env.GROQ_STT_MODEL || 'whisper-large-v3',
+  groqBaseUrl: 'https://api.groq.com/openai/v1/audio/transcriptions',
+  groqTimeoutMs: Number(process.env.GROQ_REQUEST_TIMEOUT_MS) || 20000,
+
+  // Hugging Face Emotion Model Configuration
   hfApiKey: process.env.HUGGINGFACE_API_KEY || process.env.HF_API_KEY || '',
   hfSttModel: process.env.HF_STT_MODEL || 'openai/whisper-large-v3',
   hfEmotionModel: process.env.HF_EMOTION_MODEL || 'j-hartmann/emotion-english-distilroberta-base',
-  hfRequestTimeoutMs: Number(process.env.HF_REQUEST_TIMEOUT_MS) || 30000,
+  hfRequestTimeoutMs: Number(process.env.HF_REQUEST_TIMEOUT_MS) || 45000,
 
   isProduction: process.env.NODE_ENV === 'production',
 };
