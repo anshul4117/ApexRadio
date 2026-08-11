@@ -18,18 +18,27 @@ import Badge from '../components/ui/Badge';
 import StatusBadge from '../components/ui/StatusBadge';
 import SectionHeader from '../components/ui/SectionHeader';
 import { useAlerts } from '../context/AlertsContext';
+import { useLap } from '../context/LapContext';
+import { useRadio } from '../context/RadioContext';
 
 export const AiAlertsPage = () => {
   const { alerts, activeAlertsCount, acknowledgeAlert, acknowledgeAll, resetAlerts } = useAlerts();
+  const { currentLap, lapsLoaded, driverName, correlation } = useLap();
+  const { currentAnalysis } = useRadio();
+
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
   const [searchTerm, setSearchTerm] = useState('');
+
+  const activeDriver = driverName || currentAnalysis?.driver || 'Max Verstappen';
+  const activeLap = currentLap || 18;
+  const degradationStr = correlation?.performanceDegradationStr || '+1.43 s/lap';
 
   const filteredAlerts = alerts.filter((alert) => {
     const matchesFilter = filter === 'ALL' || alert.severityKey.toUpperCase() === filter;
     const matchesSearch =
-      alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alert.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alert.recommendation.toLowerCase().includes(searchTerm.toLowerCase());
+      (alert.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (alert.whyGenerated || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (alert.recommendedAction || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -38,9 +47,9 @@ export const AiAlertsPage = () => {
       case 'critical':
         return <StatusBadge status="critical" size="sm">P1 Critical</StatusBadge>;
       case 'high':
-        return <StatusBadge status="high-stress" size="sm">P2 High</StatusBadge>;
+        return <StatusBadge status="critical" size="sm">P2 High</StatusBadge>;
       case 'medium':
-        return <StatusBadge status="fatigued" size="sm">P3 Medium</StatusBadge>;
+        return <StatusBadge status="warning" size="sm">P3 Medium</StatusBadge>;
       default:
         return <StatusBadge status="nominal" size="sm">P4 Low</StatusBadge>;
     }
@@ -52,11 +61,16 @@ export const AiAlertsPage = () => {
       {/* Section Header */}
       <SectionHeader
         title="AI Strategy & Pit Wall Alerts Center"
-        subtitle="Automated acoustic stress triggers, telemetry anomaly alerts, and tactical race engineer directives"
+        subtitle={`Live Session Directives for ${activeDriver} · Lap ${activeLap}/${lapsLoaded || 18}`}
         badge={
-          <StatusBadge status={activeAlertsCount > 0 ? 'critical' : 'nominal'}>
-            {activeAlertsCount > 0 ? `${activeAlertsCount} Active Pit Alerts` : 'All Alerts Acknowledged'}
-          </StatusBadge>
+          <div className="flex items-center gap-2">
+            <StatusBadge status={activeAlertsCount > 0 ? 'critical' : 'nominal'}>
+              {activeAlertsCount > 0 ? `${activeAlertsCount} Active Pit Alerts` : 'All Alerts Acknowledged'}
+            </StatusBadge>
+            <Badge variant="outline" size="sm">
+              Degradation: {degradationStr}
+            </Badge>
+          </div>
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -103,7 +117,7 @@ export const AiAlertsPage = () => {
         >
           <div className="flex items-center justify-between">
             <span className="text-zinc-500 font-medium">High Severity</span>
-            <StatusBadge status="high-stress" size="sm">P2</StatusBadge>
+            <StatusBadge status="critical" size="sm">P2</StatusBadge>
           </div>
           <div className="text-2xl font-bold text-rose-500 dark:text-rose-300 mt-1 font-mono">
             {alerts.filter((a) => a.severityKey === 'high' && !a.acknowledged).length} Active
@@ -116,15 +130,15 @@ export const AiAlertsPage = () => {
           onClick={() => setFilter('MEDIUM')}
           className={`p-4 rounded-xl border transition-all cursor-pointer card-hover-lift ${
             filter === 'MEDIUM'
-              ? 'border-sky-500 bg-sky-50/40 dark:bg-sky-950/30 ring-1 ring-sky-500 shadow-sm'
+              ? 'border-amber-500 bg-amber-50/40 dark:bg-amber-950/30 ring-1 ring-amber-500 shadow-sm'
               : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-[#0e0e11] hover:border-zinc-400'
           }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-zinc-500 font-medium">Medium Strategy</span>
-            <StatusBadge status="fatigued" size="sm">P3</StatusBadge>
+            <StatusBadge status="warning" size="sm">P3</StatusBadge>
           </div>
-          <div className="text-2xl font-bold text-sky-600 dark:text-sky-400 mt-1 font-mono">
+          <div className="text-2xl font-bold text-amber-500 dark:text-amber-400 mt-1 font-mono">
             {alerts.filter((a) => a.severityKey === 'medium' && !a.acknowledged).length} Active
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">Rival strategy & brake fatigue</p>
@@ -206,8 +220,8 @@ export const AiAlertsPage = () => {
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
                   <div className="flex items-center gap-2">
                     {getSeverityBadge(alert.severityKey)}
-                    <Badge variant="outline" size="sm">Lap {alert.lap}</Badge>
-                    <span className="text-zinc-400 text-xs font-mono">{alert.time}</span>
+                    <Badge variant="outline" size="sm">Lap {alert.lap || activeLap}</Badge>
+                    <span className="text-zinc-400 text-xs font-mono">{alert.timestamp || '14:22:15 UTC'}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -220,39 +234,42 @@ export const AiAlertsPage = () => {
                         variant="secondary"
                         size="sm"
                         onClick={() => acknowledgeAlert(alert.id)}
-                        className="text-xs"
+                        className="gap-1.5"
                       >
-                        Acknowledge Alert
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Acknowledge
                       </Button>
                     )}
                   </div>
                 </div>
 
-                {/* Title & Description */}
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-zinc-950 dark:text-white tracking-tight">
+                {/* Main Content */}
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-950 dark:text-white mb-1">
                     {alert.title}
                   </h3>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    {alert.description}
+                    {alert.whyGenerated}
                   </p>
                 </div>
 
-                {/* AI Tactical Directive Box */}
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 space-y-1">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-900 dark:text-white">
-                    <Zap className="w-3.5 h-3.5 text-rose-500" />
-                    <span>AI Pit Wall Recommendation:</span>
+                {/* Recommended Pit Wall Action Callout */}
+                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex items-start gap-2.5">
+                  <Zap className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-0.5">
+                    <span className="font-semibold text-zinc-900 dark:text-white block">
+                      Recommended Race Engineer Action:
+                    </span>
+                    <span className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                      {alert.recommendedAction}
+                    </span>
                   </div>
-                  <p className="text-xs text-zinc-700 dark:text-zinc-300 font-medium italic pl-5">
-                    "{alert.recommendation}"
-                  </p>
                 </div>
 
-                {/* Telemetry Root Cause Footer */}
-                <div className="flex flex-wrap items-center justify-between text-[11px] text-zinc-500 pt-1">
-                  <span>Trigger: <strong className="text-zinc-700 dark:text-zinc-300 font-mono">{alert.trigger}</strong></span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">{alert.category}</span>
+                {/* Footer Metadata */}
+                <div className="flex flex-wrap items-center justify-between text-[11px] text-zinc-400 pt-1 border-t border-zinc-100 dark:border-zinc-800/40">
+                  <span>Driver: <strong className="text-zinc-700 dark:text-zinc-300 font-semibold">{alert.driver || activeDriver}</strong></span>
+                  <span>Confidence: <strong className="text-zinc-700 dark:text-zinc-300 font-mono">{alert.confidence || 94.2}%</strong></span>
+                  <span>Category: <strong className="text-zinc-700 dark:text-zinc-300">{alert.category || 'Pit Telemetry'}</strong></span>
                 </div>
 
               </div>

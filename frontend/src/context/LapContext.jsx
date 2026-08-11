@@ -34,6 +34,25 @@ export const LapProvider = ({ children }) => {
   }, [fetchSession]);
 
   /**
+   * Sync active session across the platform
+   */
+  const syncSession = useCallback((newSession) => {
+    if (!newSession) return;
+    setCurrentSession((prev) => ({
+      ...prev,
+      ...newSession,
+    }));
+    if (newSession.lapStats || newSession.correlation) {
+      setSessionData((prev) => ({
+        ...prev,
+        ...newSession,
+        lapStats: newSession.lapStats || prev?.lapStats,
+        correlation: newSession.correlation || prev?.correlation,
+      }));
+    }
+  }, []);
+
+  /**
    * Recalculates correlation and risk score dynamically when new driver radio emotion is analyzed
    */
   const correlateWithEmotion = useCallback((emotionData) => {
@@ -41,45 +60,23 @@ export const LapProvider = ({ children }) => {
       if (!prev) return prev;
 
       const stress = Number(emotionData?.stressScore || (emotionData?.driverState === 'Stressed' ? 78 : emotionData?.driverState === 'Fatigued' ? 52 : 20));
-      const paceLoss = Number(prev.correlation?.paceLossSeconds || 0.84);
+      const paceLoss = Number(prev.correlation?.paceLossSeconds || 1.43);
       
-      // Calculate dynamic risk score: (stress * 0.4) + (paceLoss * 35) + modifier
-      let dynamicRisk = Math.round((stress * 0.45) + ((paceLoss / 2.0) * 35) + 10);
+      let dynamicRisk = Math.round((stress * 0.40) + ((paceLoss / 2.0) * 35) + 15);
       dynamicRisk = Math.min(98, Math.max(12, dynamicRisk));
 
       let riskTier = 'Low';
       let riskBadgeVariant = 'nominal';
-      if (dynamicRisk >= 80) {
+      if (dynamicRisk >= 75) {
         riskTier = 'Critical';
         riskBadgeVariant = 'critical';
-      } else if (dynamicRisk >= 60) {
+      } else if (dynamicRisk >= 55) {
         riskTier = 'High';
         riskBadgeVariant = 'critical';
       } else if (dynamicRisk >= 30) {
         riskTier = 'Medium';
-        riskBadgeVariant = 'nominal';
+        riskBadgeVariant = 'warning';
       }
-
-      const explainabilityFactors = [
-        {
-          id: `fac-stress-${Date.now()}`,
-          title: `Vocal Stress Detected (${stress}%)`,
-          description: `Driver state evaluated as ${emotionData.driverState || 'Stressed'} with ${emotionData.pitchJitter || '+42.5 Hz'} vocal pitch jitter.`,
-          severity: stress >= 65 ? 'critical' : 'nominal',
-        },
-        {
-          id: `fac-pace-${Date.now()}`,
-          title: 'Sector 2 Pace Loss (+0.84s)',
-          description: 'Telemetry delta indicates front-left thermal degradation into Turn 4 apex.',
-          severity: 'critical',
-        },
-        {
-          id: `fac-undercut-${Date.now()}`,
-          title: 'Undercut Threat (HAM #44)',
-          description: 'P2 rival running on fresh Hard compound, gaining +0.4s/lap in clean air.',
-          severity: 'nominal',
-        },
-      ];
 
       return {
         ...prev,
@@ -88,9 +85,6 @@ export const LapProvider = ({ children }) => {
           riskScore: dynamicRisk,
           riskTier,
           riskBadgeVariant,
-          paceLossSeconds: paceLoss,
-          explainabilityFactors,
-          recommendation: emotionData.recommendation || prev.correlation?.recommendation,
           correlatedAt: new Date().toISOString(),
         },
         updatedAt: new Date().toISOString(),
@@ -164,12 +158,14 @@ export const LapProvider = ({ children }) => {
 
   const lapsLoaded = sessionData?.lapsLoaded || sessionData?.lapStats?.totalLaps || currentSession?.totalLaps || 18;
   const currentLap = sessionData?.currentLap || sessionData?.lapStats?.currentLap || currentSession?.currentLap || 18;
+  const driverName = currentSession?.driverName || 'Max Verstappen';
 
   return (
     <LapContext.Provider
       value={{
         sessionData,
         currentSession,
+        driverName,
         lapStats: sessionData?.lapStats || currentSession?.lapStats || null,
         correlation: sessionData?.correlation || currentSession?.correlation || null,
         filename: sessionData?.filename || currentSession?.lapFilename || 'silverstone_stint1_telemetry.csv',
@@ -182,6 +178,7 @@ export const LapProvider = ({ children }) => {
         uploadCsv,
         loadSamplePreset,
         refreshSession: fetchSession,
+        syncSession,
         correlateWithEmotion,
       }}
     >

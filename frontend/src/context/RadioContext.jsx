@@ -39,7 +39,7 @@ const DEFAULT_ANALYSIS = {
 };
 
 export const RadioProvider = ({ children }) => {
-  const { correlateWithEmotion } = useLap();
+  const { correlateWithEmotion, syncSession } = useLap();
   const { addAlert } = useAlerts();
   const { showToast } = useDemo();
 
@@ -95,26 +95,31 @@ export const RadioProvider = ({ children }) => {
       setCurrentAnalysis(record);
       setHistory((prev) => [record, ...prev.filter((h) => h.id !== record.id)]);
 
-      // 1. Recalculate Telemetry Correlation and Risk Score in real time
+      // 1. Sync session state directly to unified session
+      if (record.session && syncSession) {
+        syncSession(record.session);
+      }
+
+      // 2. Recalculate Telemetry Correlation and Risk Score in real time
       if (correlateWithEmotion) {
         correlateWithEmotion(record.emotion);
       }
 
-      // 2. Generate dynamic alert in AlertsContext if stress is elevated
+      // 3. Generate dynamic alert in AlertsContext if stress is elevated
       const stress = Number(record.emotion?.stressScore || 0);
       const isStressed = record.emotion?.driverState === 'Stressed' || stress >= 60;
       const isFatigued = record.emotion?.driverState === 'Fatigued';
 
       if (isStressed || isFatigued) {
         addAlert({
-          title: isStressed ? 'Driver Stress Surge' : 'Driver Fatigue Detected',
-          severity: stress >= 75 ? 'critical' : 'high',
+          title: isStressed ? 'Driver Stress Surge & Performance Degradation' : 'Driver Fatigue Detected',
+          severity: stress >= 75 ? 'Critical' : 'High',
           severityKey: stress >= 75 ? 'critical' : 'high',
-          driver: `${record.driver} (${record.car || 'Car #1'})`,
-          driverState: record.emotion.driverState,
+          driver: `${record.driver || 'Max Verstappen'} (${record.car || 'Car #1'})`,
+          driverState: record.emotion?.driverState || 'Stressed',
           lap: record.lap || 18,
           confidence: record.confidence || 94.2,
-          recommendedAction: record.recommendation?.action || 'Enforce radio brevity and prepare pit entry.',
+          recommendedAction: record.recommendation?.action || record.session?.correlation?.recommendation?.action || 'Driver stress is affecting pace. Consider reducing radio traffic and evaluating tire condition.',
           whyGenerated: `Voice pitch jitter recorded at ${record.emotion?.pitchJitter || '+42.5 Hz'} with speech cadence ${record.emotion?.speechCadence || '185 WPM'}. Transcribed: "${record.transcript}"`,
           category: isStressed ? 'Acoustic Stress Spike' : 'Fatigue Telemetry',
           stressScore: stress,
@@ -133,7 +138,7 @@ export const RadioProvider = ({ children }) => {
         );
       }
     },
-    [correlateWithEmotion, addAlert, showToast]
+    [correlateWithEmotion, syncSession, addAlert, showToast]
   );
 
   /**
