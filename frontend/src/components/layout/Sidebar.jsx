@@ -71,12 +71,16 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 border-r border-zinc-200/80 dark:border-zinc-800/80">
+    <div className="flex flex-col h-full bg-white dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 border-r border-zinc-200/80 dark:border-zinc-800/80 select-none">
       
       {/* Brand Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200/80 dark:border-zinc-800/80">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-7 h-7 rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-semibold text-xs shadow-xs transition-transform group-hover:scale-105">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200/80 dark:border-zinc-800/80 flex-shrink-0">
+        <Link
+          to="/"
+          onClick={() => setIsMobileOpen && setIsMobileOpen(false)}
+          className="flex items-center gap-2.5 group"
+        >
+          <div className="w-7 h-7 rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-semibold text-xs shadow-xs transition-transform group-hover:scale-105 flex-shrink-0">
             <Radio className="w-3.5 h-3.5 stroke-[2.2]" />
           </div>
           <div className="flex flex-col">
@@ -93,15 +97,16 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
           <button
             type="button"
             onClick={() => setIsMobileOpen(false)}
-            className="md:hidden p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+            className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+            aria-label="Close menu"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
       {/* Live Session Status Strip */}
-      <div className="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/30">
+      <div className="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/30 flex-shrink-0">
         <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
           <span className="font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
@@ -115,7 +120,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       </div>
 
       {/* Main Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 overscroll-contain">
         <div className="px-3 py-1.5 text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
           Navigation
         </div>
@@ -129,7 +134,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
               key={item.path}
               to={item.path}
               onClick={() => setIsMobileOpen && setIsMobileOpen(false)}
-              className={`flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors group ${
+              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group min-h-[44px] ${
                 isActive
                   ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white font-medium shadow-2xs'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
@@ -142,7 +147,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
 
               {item.badge && (
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded font-normal leading-none ${
+                  className={`text-xs px-2 py-0.5 rounded font-normal leading-none ${
                     isActive
                       ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100'
                       : item.alertBadge
@@ -158,7 +163,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         })}
 
         {/* Demo Mode Toggle inside Sidebar */}
-        <div className="pt-4 px-3">
+        <div className="pt-3 px-1">
           <div
             onClick={toggleDemoMode}
             className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between cursor-pointer hover:border-zinc-400 transition-colors"
@@ -168,7 +173,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
               <span className="font-medium text-zinc-900 dark:text-white">Demo Mode</span>
             </div>
             <span
-              className={`text-[11px] px-1.5 py-0.5 rounded font-semibold ${
+              className={`text-[11px] px-2 py-0.5 rounded font-semibold ${
                 isDemoMode
                   ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
                   : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
@@ -180,18 +185,18 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         </div>
 
         {/* Driver Feed Switcher */}
-        <div className="pt-4 px-3">
-          <div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mb-2">
+        <div className="pt-3 px-1">
+          <div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mb-1.5 px-2">
             Active Telemetry Feed
           </div>
           <div className="space-y-1">
             {drivers.map((d) => (
               <div
                 key={d.id}
-                className={`p-2 rounded-md border text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                className={`p-2.5 rounded-lg border text-xs flex items-center justify-between cursor-pointer transition-colors ${
                   d.active
                     ? 'border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/80 text-zinc-950 dark:text-white font-medium'
-                    : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -206,9 +211,9 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       </div>
 
       {/* Sidebar Operator Footer */}
-      <div className="px-4 py-3 border-t border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-500 flex items-center justify-between">
+      <div className="px-4 py-3 border-t border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-500 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 flex-shrink-0" />
+          <div className="w-2 h-2 rounded-full bg-zinc-400 flex-shrink-0" />
           <div className="truncate">
             <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
               {user?.name || 'GP Lambiase'}
@@ -222,11 +227,11 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
         <button
           type="button"
           onClick={handleLogout}
-          className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+          className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
           title="Sign out"
           aria-label="Sign out"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -243,10 +248,10 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
             onClick={() => setIsMobileOpen(false)}
           />
-          <div className="relative flex-1 flex flex-col max-w-xs w-full shadow-xl z-10 animate-in slide-in-from-left duration-150">
+          <div className="relative flex-1 flex flex-col max-w-[280px] sm:max-w-xs w-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </div>
         </div>
