@@ -301,21 +301,42 @@ export const LandingPage = () => {
       </section>
 
       {/* 6. CALL TO ACTION */}
-      <section className="relative z-10 max-w-3xl mx-auto text-center p-6 sm:p-12 rounded-2xl bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 space-y-6 shadow-xl mx-2 sm:mx-auto">
-        <div className="space-y-2">
-          <Badge variant="white" size="sm">Hackathon Ready</Badge>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
+      <section className="relative z-10 max-w-3xl mx-auto text-center p-8 sm:p-12 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white/90 dark:bg-[#0c0c0e]/90 backdrop-blur-md space-y-6 shadow-xl mx-2 sm:mx-auto card-hover-lift">
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+            <span>Interactive Live Simulation</span>
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-zinc-950 dark:text-white">
             Ready to Experience the Pit Wall Control Room?
           </h2>
-          <p className="text-xs sm:text-sm text-zinc-400 dark:text-zinc-600 max-w-md mx-auto leading-relaxed">
-            Launch the console with Demo Mode pre-loaded to evaluate the full Silverstone GP race scenario in under 2 minutes.
+
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
+            Launch the console with Demo Mode pre-loaded to evaluate the full Silverstone GP race scenario, voice biometrics, and lap degradation in real time.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2">
           <Link to="/dashboard" className="w-full sm:w-auto">
-            <Button variant="primary" size="md" className="w-full sm:w-auto justify-center gap-2 bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white hover:opacity-90 min-h-[44px]">
-              Launch Console (Demo Mode Pre-loaded) <ArrowRight className="w-4 h-4" />
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto justify-center gap-2 shadow-md min-h-[46px] px-6 font-semibold"
+            >
+              <span>Launch Pit Wall Console</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+
+          <Link to="/architecture" className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto justify-center gap-2 min-h-[46px] px-6"
+            >
+              <Cpu className="w-4 h-4 text-zinc-500" />
+              <span>System Architecture</span>
             </Button>
           </Link>
         </div>
