@@ -8,6 +8,7 @@ import { PageSkeleton } from './components/ui/Skeleton';
 // Code-split pages for optimal performance and chunk loading
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const ArchitecturePage = lazy(() => import('./pages/ArchitecturePage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 
@@ -22,10 +23,11 @@ function App() {
   return (
     <Suspense fallback={<div className="p-6 max-w-7xl mx-auto"><PageSkeleton /></div>}>
       <Routes>
-        {/* Public Pages Layout (Landing, Architecture, Login, Register) */}
+        {/* Public Pages Layout (Landing, Architecture, About, Login, Register) */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/architecture" element={<ArchitecturePage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>

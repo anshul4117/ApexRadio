@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Radio, ArrowRight, LogOut, Cpu, Menu, X, Layers, LayoutDashboard } from 'lucide-react';
+import { Radio, ArrowRight, LogOut, Cpu, Menu, X, Layers, LayoutDashboard, Info } from 'lucide-react';
 import { healthApi } from '../../services/api';
 import StatusBadge from '../ui/StatusBadge';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -92,6 +92,18 @@ export const Navbar = () => {
               }
             >
               Architecture
+            </NavLink>
+            <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-md font-medium transition-colors ${
+                  isActive
+                    ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
+                }`
+              }
+            >
+              About
             </NavLink>
             <NavLink
               to="/dashboard"
@@ -208,6 +220,20 @@ export const Navbar = () => {
             >
               <Layers className="w-4 h-4 text-zinc-400" />
               Architecture
+            </NavLink>
+
+            <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900'
+                }`
+              }
+            >
+              <Info className="w-4 h-4 text-zinc-400" />
+              About
             </NavLink>
 
             <NavLink
