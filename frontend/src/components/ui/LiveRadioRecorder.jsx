@@ -170,7 +170,7 @@ export const LiveRadioRecorder = ({ onAnalyzeRecording, isAnalyzing = false }) =
   return (
     <Card
       title="Live Radio Voice Recorder"
-      subtitle="Speak directly into microphone for instant Groq Whisper STT & emotion analysis"
+      subtitle="Speak directly into microphone for instant Hugging Face Whisper STT & emotion analysis"
       action={
         <div className="flex items-center gap-1.5">
           {isLive ? (
@@ -238,7 +238,7 @@ export const LiveRadioRecorder = ({ onAnalyzeRecording, isAnalyzing = false }) =
           {/* Bottom HUD Strip */}
           <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono pt-1 border-t border-zinc-800/60">
             <span>Encoding: <strong className="text-zinc-300">16-Bit WAV (RIFF PCM)</strong></span>
-            <span>Target: <strong className="text-zinc-300">Groq Whisper LPU</strong></span>
+            <span>Target: <strong className="text-zinc-300">Hugging Face Whisper (Large v3)</strong></span>
           </div>
         </div>
 

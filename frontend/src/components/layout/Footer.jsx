@@ -38,7 +38,7 @@ export const Footer = () => {
 
         {/* Copyright & Model Attribution */}
         <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-zinc-400 dark:text-zinc-500">
-          <span>Powered by Groq Whisper Large v3 & 🤗 Hugging Face Emotion Classifier</span>
+          <span>Powered by 🤗 Hugging Face Inference (Whisper Large v3 + DistilRoBERTa)</span>
           <span className="font-mono">© 2026 ApexRadio AI · v1.0.0</span>
         </div>
       </div>

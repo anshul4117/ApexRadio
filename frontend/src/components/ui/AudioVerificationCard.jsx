@@ -14,8 +14,8 @@ export const AudioVerificationCard = ({
   const audioDuration = metadata.audioDuration || '4.2s';
   const transcript = currentAnalysis?.transcript || '';
   const confidence = currentAnalysis?.confidence || 96.8;
-  const provider = metadata.inferenceProvider || 'Groq (Whisper Large v3)';
-  const model = metadata.sttModel || 'whisper-large-v3';
+  const provider = metadata.inferenceProvider || 'Hugging Face (Whisper Large v3)';
+  const model = metadata.sttModel || 'openai/whisper-large-v3';
 
   return (
     <div className="bg-zinc-900/90 dark:bg-zinc-900 border border-zinc-800 dark:border-zinc-700/70 rounded-2xl p-5 shadow-xl">

@@ -194,7 +194,7 @@ export const RadioAnalysisPage = () => {
       {/* Section Header */}
       <SectionHeader
         title="Driver Radio & Acoustic Emotion Pipeline"
-        subtitle="Groq Whisper Large v3 STT transcription, vocal pitch jitter extraction, CSV lap telemetry correlation & race session synchronization"
+        subtitle="Hugging Face Whisper Large v3 STT transcription, vocal pitch jitter extraction, CSV lap telemetry correlation & race session synchronization"
         badge={
           <div className="flex items-center gap-2">
             <StatusBadge status={isElevated ? 'critical' : isFatigued ? 'high-stress' : 'nominal'}>
@@ -281,7 +281,7 @@ export const RadioAnalysisPage = () => {
                 <div className="space-y-2 max-w-md mx-auto">
                   <p className="text-xs font-semibold text-zinc-950 dark:text-white capitalize">
                     {analysisStep === 'uploading' && `Stage 1/6: Uploading Cockpit Audio (${uploadProgress}%)...`}
-                    {analysisStep === 'transcribing' && 'Stage 2/6: Transcribing with Groq Whisper Large v3 LPU...'}
+                    {analysisStep === 'transcribing' && 'Stage 2/6: Transcribing with Hugging Face Whisper Large v3...'}
                     {analysisStep === 'analyzing' && 'Stage 3/6: Extracting Vocal Pitch Jitter & Acoustic Emotion...'}
                     {analysisStep === 'correlating' && 'Stage 4/6 & 5/6: Parsing Telemetry & Correlating Stress with Pace...'}
                     {analysisStep === 'completed' && 'Stage 6/6: Generating Pit Wall Tactical Recommendation...'}
@@ -498,8 +498,8 @@ export const RadioAnalysisPage = () => {
 
           {/* Transcript Typewriter Card */}
           <Card
-            title="Live Groq Speech-to-Text Transcription"
-            subtitle="High-fidelity cockpit speech transcription with domain vocabulary"
+            title="Live Hugging Face Speech-to-Text Transcription"
+            subtitle="Hugging Face (openai/whisper-large-v3) cockpit speech transcription with motorsport domain vocabulary"
             action={
               <button
                 type="button"
@@ -512,9 +512,9 @@ export const RadioAnalysisPage = () => {
             }
             footer={
               <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500">
-                <span>Model: <strong>{currentAnalysis?.metadata?.sttModel || 'whisper-large-v3'}</strong></span>
+                <span>Model: <strong>{currentAnalysis?.metadata?.sttModel || 'openai/whisper-large-v3'}</strong></span>
                 <span>Latency: <strong className="font-mono">{currentAnalysis?.processingTime || '1.14s'}</strong></span>
-                <span>Confidence: <strong className="font-mono">{currentAnalysis?.confidence || 94.2}%</strong></span>
+                <span>Confidence: <strong className="font-mono">{currentAnalysis?.confidence || 96.8}%</strong></span>
               </div>
             }
           >

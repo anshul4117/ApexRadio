@@ -32,7 +32,7 @@ export const LandingPage = () => {
     {
       step: '02',
       title: 'Speech-to-Text',
-      desc: 'Groq Whisper Large v3 LPU transcribes cockpit speech with motorsport domain accuracy in sub-seconds.',
+      desc: 'Hugging Face Whisper Large v3 transcribes cockpit speech with motorsport domain accuracy in sub-seconds.',
       icon: Radio,
     },
     {
@@ -285,8 +285,8 @@ export const LandingPage = () => {
             </div>
 
             <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1 text-left sm:text-center">
-              <span className="font-semibold text-zinc-950 dark:text-white block">Groq + Hugging Face</span>
-              <p className="text-zinc-500 text-[11px]">Groq Whisper Large v3 (STT) + DistilRoBERTa Emotion Engine</p>
+              <span className="font-semibold text-zinc-950 dark:text-white block">🤗 Hugging Face Inference</span>
+              <p className="text-zinc-500 text-[11px]">Whisper Large v3 (STT) + DistilRoBERTa Emotion Engine</p>
             </div>
           </div>
 

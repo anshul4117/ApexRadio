@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, Pause, Square, Volume2, Sparkles, FastForward, CheckCircle } from 'lucide-react';
 
-export const TranscriptTtsPlayer = ({ transcript = '', confidence = 96.8, provider = 'Groq Whisper Large v3' }) => {
+export const TranscriptTtsPlayer = ({ transcript = '', confidence = 96.8, provider = 'Hugging Face Whisper Large v3' }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1.0);

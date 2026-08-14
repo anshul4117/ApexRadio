@@ -56,8 +56,8 @@ export const AboutPage = () => {
     {
       id: '03',
       code: 'CH-03 // SUB-SECOND INFERENCE',
-      title: 'Sub-700ms Speech-to-Text via Groq Whisper LPU',
-      desc: 'Formula 1 pit walls cannot wait 5 seconds for cloud transcription. By leveraging Groq Whisper Large v3 LPU acceleration, radio messages are transcribed in under 700ms with specialized motorsport vocabulary (delta, undercut, apex, slip).',
+      title: 'Sub-Second Speech-to-Text via Hugging Face Whisper',
+      desc: 'Formula 1 pit walls cannot wait 5 seconds for cloud transcription. By leveraging Hugging Face Whisper Large v3 inference, radio messages are transcribed in sub-seconds with specialized motorsport vocabulary (delta, undercut, apex, slip).',
       stat: '<700ms',
       statLabel: 'Inference Latency',
     },
@@ -75,7 +75,7 @@ export const AboutPage = () => {
     {
       feature: 'Cockpit Audio Transcription',
       traditional: 'Manual listening through high-RPM engine noise',
-      apexRadio: 'Instant Groq Whisper Large v3 STT (<700ms) with motorsport domain tuning',
+      apexRadio: 'Instant Hugging Face Whisper Large v3 STT (<700ms) with motorsport domain tuning',
     },
     {
       feature: 'Driver Psychological Stress',
@@ -100,7 +100,7 @@ export const AboutPage = () => {
   ];
 
   const techStack = [
-    { name: 'Groq Whisper Large v3', tag: 'STT Inference', metric: '621ms Latency', color: 'text-rose-500' },
+    { name: 'Hugging Face Whisper v3', tag: 'STT Inference', metric: 'Whisper LPU', color: 'text-rose-500' },
     { name: 'Hugging Face DistilRoBERTa', tag: 'Emotion Classifier', metric: '3-Class Biometrics', color: 'text-amber-500' },
     { name: 'Recharts Telemetry Engine', tag: 'Visual Analytics', metric: '60fps Charting', color: 'text-emerald-500' },
     { name: 'Canvas Physics Matrix', tag: 'Interactive Surface', metric: 'Elastic Grid Mesh', color: 'text-sky-500' },
@@ -154,7 +154,7 @@ export const AboutPage = () => {
               </div>
               <div className="p-3 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/60 col-span-2 sm:col-span-1">
                 <span className="text-[10px] text-zinc-400 block uppercase">Models</span>
-                <strong className="text-zinc-950 dark:text-white text-sm font-bold">Groq + HF 🤗</strong>
+                <strong className="text-zinc-950 dark:text-white text-sm font-bold">Hugging Face 🤗</strong>
               </div>
             </div>
 
@@ -368,18 +368,16 @@ export const AboutPage = () => {
           ))}
         </div>
 
-        {/* Hugging Face & Groq Dedicated Credit Callout */}
+        {/* Hugging Face Dedicated Credit Callout */}
         <div className="p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 text-center space-y-2 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white">
             <span>Powered by</span>
             <span className="text-lg">🤗</span>
-            <span>Hugging Face Inference</span>
-            <span>&</span>
-            <Zap className="w-4 h-4 text-rose-500 fill-current" />
-            <span>Groq LPU Hardware Acceleration</span>
+            <span>Hugging Face Inference Platform</span>
+            <span>(Whisper Large v3 + DistilRoBERTa)</span>
           </div>
           <p className="text-xs text-zinc-500 max-w-xl mx-auto leading-relaxed">
-            ApexRadio AI utilizes open-source DistilRoBERTa emotion classification models hosted on Hugging Face along with Groq Whisper Large v3 for ultra-low latency cockpit transcription.
+            ApexRadio AI utilizes open-source Whisper Large v3 for ultra-accurate speech-to-text cockpit transcription alongside DistilRoBERTa emotion classification models hosted on Hugging Face.
           </p>
         </div>
       </section>

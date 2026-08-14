@@ -42,7 +42,7 @@ export const EngineeringEmptyState = ({ on1ClickDemo, onSelectAudioPreset, onLoa
             <span className="font-bold text-zinc-950 dark:text-white">Cockpit Radio Audio</span>
           </div>
           <p className="text-[11px] text-zinc-500">
-            WAV or MP3 driver radio recording for Groq Whisper transcription & pitch jitter extraction.
+            WAV or MP3 driver radio recording for Hugging Face Whisper transcription & pitch jitter extraction.
           </p>
         </div>
 

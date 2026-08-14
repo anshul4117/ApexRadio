@@ -61,7 +61,7 @@ export const ArchitecturePage = () => {
               {/* Step 2: AI Inference */}
               <div className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1.5 shadow-2xs card-hover-lift">
                 <span className="font-semibold text-zinc-950 dark:text-white block font-sans">2. AI INFERENCE</span>
-                <p className="text-[11px] text-zinc-500 font-sans">Groq & Hugging Face</p>
+                <p className="text-[11px] text-zinc-500 font-sans">🤗 Hugging Face Platform</p>
                 <div className="text-[10px] text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-1">
                   Whisper Large v3 (STT)<br />DistilRoBERTa (Emotion)
                 </div>
@@ -125,7 +125,7 @@ export const ArchitecturePage = () => {
               <div className="p-3 rounded-lg bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/60 space-y-1">
                 <span className="font-semibold text-zinc-950 dark:text-white">Service Layer Architecture</span>
                 <ul className="space-y-1 text-[11px] text-zinc-500 list-disc list-inside">
-                  <li><code>speechToTextService</code> / <code>groqSttService</code>: Whisper Large v3 STT inference.</li>
+                  <li><code>speechToTextService</code> / <code>huggingFaceClient</code>: Whisper Large v3 STT inference.</li>
                   <li><code>emotionDetectionService</code>: Driver State (Calm, Stressed, Fatigued) mapping.</li>
                   <li><code>correlationService</code>: Multi-factor risk engine & explainability generator.</li>
                   <li><code>lapAnalysisService</code>: CSV parsing, lap trend detection, and moving averages.</li>
