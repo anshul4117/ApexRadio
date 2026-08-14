@@ -21,17 +21,21 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter: accept WAV/MP3 audio and CSV telemetry files
+// File filter: accept WAV/MP3/WEBM audio and CSV telemetry files
 const fileFilter = (req, file, cb) => {
-  const allowedAudioExts = ['.wav', '.mp3', '.flac', '.ogg', '.m4a'];
+  const allowedAudioExts = ['.wav', '.mp3', '.flac', '.ogg', '.m4a', '.webm', '.mp4'];
   const allowedCsvExts = ['.csv', '.txt'];
   const allowedMimeTypes = [
     'audio/wav',
     'audio/x-wav',
+    'audio/wave',
     'audio/mpeg',
     'audio/mp3',
     'audio/ogg',
     'audio/x-m4a',
+    'audio/webm',
+    'audio/webm;codecs=opus',
+    'audio/mp4',
     'text/csv',
     'text/plain',
     'application/csv',
@@ -44,11 +48,12 @@ const fileFilter = (req, file, cb) => {
   if (
     allowedAudioExts.includes(ext) ||
     allowedCsvExts.includes(ext) ||
-    allowedMimeTypes.includes(file.mimetype)
+    allowedMimeTypes.includes(file.mimetype) ||
+    file.mimetype?.startsWith('audio/')
   ) {
     cb(null, true);
   } else {
-    cb(new Error(`Unsupported file format (${ext || file.mimetype}). Supported formats: Audio (.wav, .mp3) and Telemetry (.csv).`), false);
+    cb(new Error(`Unsupported file format (${ext || file.mimetype}). Supported formats: Audio (.wav, .mp3, .webm) and Telemetry (.csv).`), false);
   }
 };
 

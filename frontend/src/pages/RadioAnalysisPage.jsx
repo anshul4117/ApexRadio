@@ -27,6 +27,7 @@ import SectionHeader from '../components/ui/SectionHeader';
 import AudioWaveformVisualizer from '../components/ui/AudioWaveformVisualizer';
 import ExplainabilityPanel from '../components/ui/ExplainabilityPanel';
 import AudioVerificationCard from '../components/ui/AudioVerificationCard';
+import LiveRadioRecorder from '../components/ui/LiveRadioRecorder';
 import { useRadio } from '../context/RadioContext';
 import { useLap } from '../context/LapContext';
 import { useTypewriter } from '../hooks/useTypewriter';
@@ -258,14 +259,20 @@ export const RadioAnalysisPage = () => {
         </div>
       )}
 
-      {/* DUAL INGESTION GRID: Radio Audio Upload & Lap Time CSV Ingestion */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      {/* TRIPLE INGESTION GRID: Live Radio Voice Recorder, Audio File Upload & Lap Time CSV Ingestion */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
         
-        {/* 1. Radio Audio Stream Ingestion Card */}
+        {/* 1. Live Radio Voice Recorder (Microphone Recording) */}
+        <LiveRadioRecorder
+          onAnalyzeRecording={(file) => analyzeFile(file)}
+          isAnalyzing={isAnalyzing}
+        />
+
+        {/* 2. Radio Audio Stream Ingestion Card (File Upload & Presets) */}
         <Card
           title="Team Radio Audio Ingestion"
           subtitle="Upload cockpit voice recording (.wav/.mp3)"
-          action={<Badge variant="outline" size="sm">Channel 1 (Live)</Badge>}
+          action={<Badge variant="outline" size="sm">File Upload</Badge>}
         >
           <div className="space-y-3">
             {isAnalyzing ? (
