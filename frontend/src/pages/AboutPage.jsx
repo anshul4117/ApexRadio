@@ -42,7 +42,9 @@ import { useTheme } from '../context/ThemeContext';
 
 export const AboutPage = () => {
   const { resolvedTheme } = useTheme();
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [lineFillPx, setLineFillPx] = useState(0);
+  const [trackStartOffset, setTrackStartOffset] = useState(40);
+  const [trackHeight, setTrackHeight] = useState(0);
   const [passedMilestones, setPassedMilestones] = useState(new Set());
   const [sequencePhase, setSequencePhase] = useState(0); // 0: Waveform, 1: Racing Line, 2: Lap Graph, 3: Stress Pulse, 4: Heartbeat, 5: Identity
   const canvasRef = useRef(null);
@@ -311,28 +313,38 @@ export const AboutPage = () => {
     },
   ];
 
-  // High-performance, two-way scroll tracking (Works smoothly scrolling down AND scrolling up)
+  // Pure Smooth 60fps Sub-Pixel Scroll Tracker (No CSS transition fighting, two-way pixel accurate)
   useEffect(() => {
     let ticking = false;
 
     const updateTimeline = () => {
-      if (!timelineRef.current) return;
+      if (!timelineRef.current || milestoneRefs.current.length === 0) return;
       const timelineRect = timelineRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
-      const triggerY = windowHeight * 0.62; // Trigger threshold at 62% of viewport
+      const triggerY = windowHeight * 0.65; // Trigger threshold at 65% of viewport
 
-      // 1. Calculate laser progress fill line height
-      const lineStart = timelineRect.top;
-      const totalLength = timelineRect.height;
+      const firstNode = milestoneRefs.current[0];
+      const lastNode = milestoneRefs.current[milestoneRefs.current.length - 1];
 
-      if (totalLength > 0) {
-        const currentFill = triggerY - lineStart;
-        const clampedFill = Math.max(0, Math.min(totalLength, currentFill));
-        const progressPercentage = (clampedFill / totalLength) * 100;
-        setScrollProgress(progressPercentage);
-      }
+      if (!firstNode || !lastNode) return;
 
-      // 2. Determine active milestones based on DOM node centers (Two-way responsive)
+      const firstRect = firstNode.getBoundingClientRect();
+      const lastRect = lastNode.getBoundingClientRect();
+
+      // Start and end centers relative to the timeline container
+      const startY = firstRect.top + firstRect.height / 2 - timelineRect.top;
+      const endY = lastRect.top + lastRect.height / 2 - timelineRect.top;
+      const totalTrack = Math.max(0, endY - startY);
+
+      setTrackStartOffset(startY);
+      setTrackHeight(totalTrack);
+
+      // Sub-pixel fill calculation
+      const currentScrollY = triggerY - (timelineRect.top + startY);
+      const clampedFill = Math.max(0, Math.min(totalTrack, currentScrollY));
+      setLineFillPx(clampedFill);
+
+      // Determine active milestones with direct coordinate comparison
       const passed = new Set();
       milestoneRefs.current.forEach((el, index) => {
         if (!el) return;
@@ -638,7 +650,7 @@ export const AboutPage = () => {
         </div>
       </section>
 
-      {/* 4. INTERACTIVE ROADMAP TIMELINE (Main Storytelling Feature) */}
+      {/* 4. INTERACTIVE ROADMAP TIMELINE (Pure Smooth 60fps Sub-Pixel Tracker) */}
       <section ref={timelineRef} className="relative z-10 max-w-4xl mx-auto space-y-10">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-semibold">
@@ -656,14 +668,34 @@ export const AboutPage = () => {
         {/* Vertical Animated Roadmap Container */}
         <div className="relative py-4">
           
-          {/* Background Static Vertical Center Line */}
-          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-zinc-200 dark:bg-zinc-800" />
-
-          {/* Active Animated Glowing Laser Fill Line (Two-Way Scroll-Driven) */}
+          {/* Background Static Guide Line (Anchored from Node 1 center to Node 7 center) */}
           <div
-            className="absolute left-6 md:left-1/2 top-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-rose-500 via-rose-500 to-rose-400 transition-all duration-150 shadow-[0_0_12px_rgba(244,63,94,0.7)] pointer-events-none"
-            style={{ height: `${scrollProgress}%` }}
+            className="absolute left-6 md:left-1/2 w-0.5 -translate-x-1/2 bg-zinc-200 dark:bg-zinc-800"
+            style={{
+              top: `${trackStartOffset}px`,
+              height: `${trackHeight}px`,
+            }}
           />
+
+          {/* Active Animated Glowing Laser Fill Line (Pure Sub-Pixel Smooth Tracking) */}
+          <div
+            className="absolute left-6 md:left-1/2 w-0.5 -translate-x-1/2 bg-gradient-to-b from-rose-500 via-rose-500 to-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.7)] pointer-events-none z-10"
+            style={{
+              top: `${trackStartOffset}px`,
+              height: `${lineFillPx}px`,
+            }}
+          />
+
+          {/* Glowing Laser Beam Spark Tip */}
+          {lineFillPx > 0 && lineFillPx < trackHeight && (
+            <div
+              className="absolute left-6 md:left-1/2 w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_14px_#f43f5e] pointer-events-none z-30 animate-pulse"
+              style={{
+                top: `${trackStartOffset + lineFillPx}px`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+          )}
 
           {/* Milestone Cards Stream */}
           <div className="space-y-12 sm:space-y-16">
@@ -676,7 +708,7 @@ export const AboutPage = () => {
                 <div
                   key={idx}
                   ref={(el) => (milestoneRefs.current[idx] = el)}
-                  className={`relative flex flex-col md:flex-row items-start md:items-center transition-all duration-300 ${
+                  className={`relative flex flex-col md:flex-row items-start md:items-center ${
                     isEven ? 'md:flex-row-reverse' : ''
                   }`}
                 >
